@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="d8eb42ed-5739-4a2d-8762-54f03a0e0555" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/.env.example" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.github/workflows/deploy.yml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.github/workflows/tests.yml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/WeatherTrackerAPI.iml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/profiles_settings.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/alembic/alembic.ini" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/alembic/env.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/alembic/script.py.mako" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/api/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/api/core/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/api/core/events.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/api/core/exceptions.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/api/core/middleware.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/api/core/rate_limiter.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/api/core/security.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/api/deps.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/api/models/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/api/models/audit.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/api/models/base.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/api/models/cache.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/api/models/user.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/api/models/weather_request.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/api/repositories/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/api/repositories/base.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/api/repositories/cache_repository.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/api/repositories/user_repository.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/api/repositories/weather_repository.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/api/routers/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/api/routers/auth.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/api/routers/history.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/api/routers/users.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/api/routers/weather.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/api/schemas/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/api/schemas/audit_service.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/api/schemas/auth_service.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/api/schemas/cache_service.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/api/schemas/email_service.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/api/schemas/user_service.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/api/schemas/weather_service.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/api/services/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/api/services/auth_service.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/api/services/cache_service.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/api/services/user_service.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/api/services/weather_service.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/api/utils/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/api/utils/email_client.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/api/utils/helpers.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/api/utils/openweathermap.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/api/utils/redis_client.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/api/utils/security.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/api/v1/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/api/v1/auth.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/api/v1/history.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/api/v1/router.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/api/v1/users.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/api/v1/weather.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/config.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/database.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/dependencies.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/main.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/check_dependencies.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/docker/Dockerfile" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/docker/docker-compose.dev.yml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/docker/docker-compose.yml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/docs/API_DOCS.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/docs/DEPLOYMENT.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/docs/GIT_SETUP.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/requirements.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/scripts/database_setup.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/scripts/run_tests.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/scripts/start_dev.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/setup_project.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tests/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tests/conftest.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tests/test_auth.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tests/test_history.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tests/test_weather.py" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Python Script" />
+      </list>
+    </option>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="ProjectColorInfo"><![CDATA[{
+  "associatedIndex": 2
+}]]></component>
+  <component name="ProjectId" id="31NIy9WTl4KRBTejVpqJP2X435J" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "git-widget-placeholder": "main",
+    "last_opened_file_path": "/Users/satqy/PycharmProjects/WeatherTrackerAPI/app/api/repositories"
+  }
+}]]></component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/app/api/repositories" />
+      <recent name="$PROJECT_DIR$/app/api/v1" />
+    </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/alembic" />
+      <recent name="$PROJECT_DIR$/app/api" />
+    </key>
+  </component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-python-sdk-b3ae9b5d7125-f0eec537fc84-com.jetbrains.pycharm.pro.sharedIndexes.bundled-PY-252.23892.439" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="d8eb42ed-5739-4a2d-8762-54f03a0e0555" name="Changes" comment="" />
+      <created>1755358354941</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1755358354941</updated>
+    </task>
+    <servers />
+  </component>
+</project>
