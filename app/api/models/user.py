@@ -1,23 +1,15 @@
 """
-User model для WeatherTracker API
-
-Модель користувача з повною інформацією для аутентифікації
+User model для WeatherTracker API (виправлений)
 """
 
 from sqlalchemy import Column, Integer, String, Boolean, DateTime
 from sqlalchemy.sql import func
+from datetime import datetime
 from app.api.models.base import Base
 
 
 class User(Base):
-    """
-    Модель користувача
-
-    Містить всю необхідну інформацію для:
-    - Аутентифікації та авторизації
-    - Персоналізації досвіду користувача
-    - Відстеження активності
-    """
+    """Модель користувача з виправленими timestamps"""
 
     __tablename__ = "users"
 
@@ -32,7 +24,7 @@ class User(Base):
     is_verified = Column(Boolean, default=False, nullable=False)
     is_superuser = Column(Boolean, default=False, nullable=False)
 
-    # Персональна інформація (опціонально)
+    # Персональна інформація
     first_name = Column(String(50), nullable=True)
     last_name = Column(String(50), nullable=True)
 
@@ -40,9 +32,9 @@ class User(Base):
     last_login = Column(DateTime(timezone=True), nullable=True)
     login_count = Column(Integer, default=0, nullable=False)
 
-    # Часові мітки
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+    # ВИПРАВЛЕНІ Часові мітки
+    created_at = Column(DateTime(timezone=True), default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
     def __repr__(self):
         """Строкове представлення користувача"""
