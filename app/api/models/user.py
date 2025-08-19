@@ -1,83 +1,74 @@
 """
-Модель користувача для WeatherTracker API
+User model для WeatherTracker API
+
+Модель користувача з повною інформацією для аутентифікації
 """
-from sqlalchemy import Column, String, Boolean, DateTime
-from sqlalchemy.orm import relationship
-from datetime import datetime
 
-from app.api.models.base import BaseModel
+from sqlalchemy import Column, Integer, String, Boolean, DateTime
+from sqlalchemy.sql import func
+from app.api.models.base import Base
 
 
-class User(BaseModel):
+class User(Base):
     """
     Модель користувача
+
+    Містить всю необхідну інформацію для:
+    - Аутентифікації та авторизації
+    - Персоналізації досвіду користувача
+    - Відстеження активності
     """
+
     __tablename__ = "users"
 
-    # Основні поля користувача
+    # Основні поля
+    id = Column(Integer, primary_key=True, index=True)
     username = Column(String(50), unique=True, index=True, nullable=False)
     email = Column(String(100), unique=True, index=True, nullable=False)
     hashed_password = Column(String(255), nullable=False)
 
     # Статус користувача
+    is_active = Column(Boolean, default=True, nullable=False)
     is_verified = Column(Boolean, default=False, nullable=False)
     is_superuser = Column(Boolean, default=False, nullable=False)
 
-    # Поля активності
-    last_login = Column(DateTime, nullable=True)
-    login_count = Column(String(10), default="0", nullable=False)
-
-    # Додаткові поля профілю
+    # Персональна інформація (опціонально)
     first_name = Column(String(50), nullable=True)
     last_name = Column(String(50), nullable=True)
 
+    # Інформація про активність
+    last_login = Column(DateTime(timezone=True), nullable=True)
+    login_count = Column(Integer, default=0, nullable=False)
+
+    # Часові мітки
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
 
     def __repr__(self):
+        """Строкове представлення користувача"""
         return f"<User(id={self.id}, username='{self.username}', email='{self.email}')>"
 
-    def get_full_name(self):
-        """Отримання повного ім'я користувача"""
+    @property
+    def full_name(self) -> str:
+        """Повне ім'я користувача"""
         if self.first_name and self.last_name:
             return f"{self.first_name} {self.last_name}"
         elif self.first_name:
             return self.first_name
+        elif self.last_name:
+            return self.last_name
         else:
             return self.username
 
-    def update_last_login(self):
-        """Оновлення часу останнього входу"""
-        self.last_login = datetime.utcnow()
-        # Збільшити лічильник входів
-        try:
-            current_count = int(self.login_count)
-            self.login_count = str(current_count + 1)
-        except (ValueError, TypeError):
-            self.login_count = "1"
-
-    def is_authenticated(self):
-        """Перевірка чи користувач аутентифікований"""
-        return self.is_active and self.is_verified
-
-    def to_dict(self, include_sensitive=False):
-        """
-        Конвертація в словник з включенням чутливих даних
-        """
-        data = {
+    def to_dict(self) -> dict:
+        """Конвертація в словник для JSON відповідей"""
+        return {
             "id": self.id,
             "username": self.username,
             "email": self.email,
+            "full_name": self.full_name,
             "is_active": self.is_active,
             "is_verified": self.is_verified,
-            "is_superuser": self.is_superuser,
-            "first_name": self.first_name,
-            "last_name": self.last_name,
-            "last_login": self.last_login.isoformat() if self.last_login else None,
-            "login_count": self.login_count,
-            "created_at": self.created_at.isoformat(),
-            "updated_at": self.updated_at.isoformat()
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "last_login": self.last_login.isoformat() if self.last_login else None
         }
-
-        if include_sensitive:
-            data["hashed_password"] = self.hashed_password
-
-        return data
