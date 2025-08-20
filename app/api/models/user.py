@@ -1,15 +1,16 @@
 """
-User model для WeatherTracker API (виправлений)
+User model для WeatherTracker API
 """
 
 from sqlalchemy import Column, Integer, String, Boolean, DateTime
+from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from datetime import datetime
 from app.api.models.base import Base
 
 
 class User(Base):
-    """Модель користувача з виправленими timestamps"""
+    """Модель користувача з timestamps"""
 
     __tablename__ = "users"
 
@@ -32,9 +33,12 @@ class User(Base):
     last_login = Column(DateTime(timezone=True), nullable=True)
     login_count = Column(Integer, default=0, nullable=False)
 
-    # ВИПРАВЛЕНІ Часові мітки
+    # Часові мітки
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+    # Зв'язки з іншими таблицями
+    weather_requests = relationship("WeatherRequest", back_populates="user", cascade="all, delete-orphan")
 
     def __repr__(self):
         """Строкове представлення користувача"""

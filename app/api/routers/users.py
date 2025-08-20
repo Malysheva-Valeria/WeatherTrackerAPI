@@ -4,7 +4,7 @@ Users Router для WeatherTracker API
 Ендпойнти для:
 - Управління профілем користувача
 - Оновлення інформації
-- Зміни паролю
+- Зміни пароля
 - Видалення акаунту
 """
 
@@ -55,7 +55,7 @@ async def update_my_profile(
     Raises:
         HTTPException: 400 якщо email/username вже використовуються
     """
-    # Перевіряємо унікальність email (якщо змінюється)
+    # Перевірка унікальності email (якщо змінюється)
     if user_update.email and user_update.email != current_user.email:
         existing_user = db.query(User).filter(
             User.email == user_update.email,
@@ -68,7 +68,7 @@ async def update_my_profile(
                 detail="Користувач з таким email вже існує"
             )
 
-    # Перевіряємо унікальність username (якщо змінюється)
+    # Перевірка унікальності username (якщо змінюється)
     if user_update.username and user_update.username != current_user.username:
         existing_user = db.query(User).filter(
             User.username == user_update.username,
@@ -81,14 +81,14 @@ async def update_my_profile(
                 detail="Користувач з таким username вже існує"
             )
 
-    # Оновлюємо поля користувача
+    # Оновлення поля користувача
     update_data = user_update.dict(exclude_unset=True)
 
     for field, value in update_data.items():
         if hasattr(current_user, field):
             setattr(current_user, field, value)
 
-    # Якщо змінюється email - скидаємо верифікацію
+    # Якщо змінюється email - скидається верифікація
     if user_update.email and user_update.email != current_user.email:
         current_user.is_verified = False
 
@@ -105,7 +105,7 @@ async def change_password(
         db: Session = Depends(get_db)
 ):
     """
-    Зміна паролю користувача
+    Зміна пароля користувача
 
     Args:
         password_data: Поточний та новий паролі
@@ -113,21 +113,21 @@ async def change_password(
         db: Сесія бази даних
 
     Returns:
-        MessageResponse: Повідомлення про успішну зміну паролю
+        MessageResponse: Повідомлення про успішну зміну пароля
 
     Raises:
         HTTPException: 400 якщо поточний пароль невірний або новий пароль слабкий
     """
     auth_service = get_auth_service()
 
-    # Перевіряємо поточний пароль
+    # Перевірка поточного пароля
     if not auth_service.verify_password(password_data.current_password, current_user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Поточний пароль невірний"
         )
 
-    # Перевіряємо силу нового паролю
+    # Перевірка сили нового пароля
     is_strong, message = auth_service.validate_password_strength(password_data.new_password)
     if not is_strong:
         raise HTTPException(
@@ -135,14 +135,14 @@ async def change_password(
             detail=message
         )
 
-    # Перевіряємо що новий пароль відрізняється від поточного
+    # Перевірка що новий пароль відрізняється від поточного
     if auth_service.verify_password(password_data.new_password, current_user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Новий пароль має відрізнятись від поточного"
         )
 
-    # Оновлюємо пароль
+    # Оновлення паролю
     current_user.hashed_password = auth_service.get_password_hash(password_data.new_password)
     db.commit()
 
@@ -164,7 +164,7 @@ async def delete_my_account(
     Returns:
         MessageResponse: Повідомлення про видалення акаунту
     """
-    # Замість фізичного видалення - деактивуємо користувача
+    # Замість фізичного видалення - деактивація користувача
     current_user.is_active = False
     db.commit()
 

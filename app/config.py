@@ -21,6 +21,11 @@ class Settings(BaseSettings):
     OPENWEATHER_API_KEY: Optional[str] = None
     OPENWEATHER_BASE_URL: str = "http://api.openweathermap.org/data/2.5"
 
+    # Weather service settings
+    WEATHER_CACHE_TTL: int = 600  # 10 хвилин
+    WEATHER_TIMEOUT: int = 10  # 10 секунд
+    WEATHER_USE_MOCK: bool = False
+
     # Application settings
     DEBUG: bool = True
     APP_HOST: str = "127.0.0.1"
@@ -29,6 +34,8 @@ class Settings(BaseSettings):
     # Cache settings
     CACHE_TTL: int = 600  # 10 хвилин
     REDIS_URL: str = "redis://localhost:6379/0"
+
+
 
     class Config:
         """Конфігурація для читання з .env файлу"""
@@ -41,5 +48,5 @@ settings = Settings()
 
 
 def get_settings() -> Settings:
-    """Отримати налаштування додатку"""
+    """Отримання налаштування додатку"""
     return settings

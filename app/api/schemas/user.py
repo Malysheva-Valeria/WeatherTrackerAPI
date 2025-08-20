@@ -57,6 +57,6 @@ class UserSummary(BaseSchema):
 
 
 class PasswordChangeRequest(BaseSchema):
-    """Схема для зміни паролю"""
+    """Схема для зміни пароля"""
     current_password: str = Field(..., description="Поточний пароль")
     new_password: str = Field(..., min_length=8, max_length=128, description="Новий пароль")
