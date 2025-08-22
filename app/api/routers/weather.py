@@ -39,7 +39,7 @@ async def save_weather_request(
         is_cached: bool = False,
         is_mock: bool = False
 ) -> None:
-    """Зберігає погодний запит в історію"""
+    """Збереження погодного запиту в історію"""
     try:
         from app.api.models.weather_request import WeatherRequest as WeatherRequestModel
 
@@ -309,7 +309,7 @@ async def get_weather_forecast(
         db: Session = Depends(get_db)
 ):
     """
-    Отримати прогноз погоди на кілька днів
+    Отримання прогнозу погоди на кілька днів
 
     Можна вказати або місто, або координати:
     - **city**: Назва міста (наприклад: Kyiv, London, New York)
@@ -332,7 +332,7 @@ async def get_weather_forecast(
                 detail="Вкажіть або назву міста, або координати (latitude + longitude)"
             )
 
-        # Отримуємо прогноз через weather service
+        # Отримання прогнозу через weather service
         weather_service = get_weather_service()
         forecast = await weather_service.get_5day_forecast(
             city=city,
@@ -356,9 +356,6 @@ async def get_weather_forecast(
             detail=f"Помилка отримання прогнозу погоди: {str(e)}"
         )
 
-
-# Додай цей endpoint до app/api/routers/weather.py
-
 @router.get("/forecast/coordinates", response_model=ForecastResponse, tags=["Weather"])
 async def get_forecast_by_coordinates(
         latitude: float = Query(..., ge=-90, le=90, description="Широта (-90 до 90)"),
@@ -368,7 +365,7 @@ async def get_forecast_by_coordinates(
         current_user: User = Depends(get_current_active_user)
 ):
     """
-    Отримати прогноз погоди по координатах (широта/довгота)
+    Отримання прогнозу погоди по координатах (широта/довгота)
 
     Цей endpoint дозволяє отримати точний прогноз для будь-якої точки на Землі
     без необхідності знати назву міста.
@@ -388,7 +385,7 @@ async def get_forecast_by_coordinates(
         logger.info(
             f"Запит прогнозу по координатах: {latitude}, {longitude} на {days} днів для користувача {current_user.id}")
 
-        # Отримуємо прогноз від сервісу
+        # Отримання прогнозу від сервісу
         weather_service = get_weather_service()
         forecast_data = await weather_service.get_5day_forecast(
             city=None,  # Без міста
@@ -425,7 +422,7 @@ async def get_current_weather_by_coordinates(
         current_user: User = Depends(get_current_active_user)
 ):
     """
-    Отримати поточну погоду по координатах
+    Отримання поточної погоди по координатах
 
     **Параметри:**
     - **latitude**: Широта від -90 до 90 градусів
@@ -434,7 +431,7 @@ async def get_current_weather_by_coordinates(
     try:
         logger.info(f"Запит поточної погоди по координатах: {latitude}, {longitude} для користувача {current_user.id}")
 
-        # Отримуємо погоду від сервісу
+        # Отримання погоди від сервісу
         weather_service = get_weather_service()
 
         # Для координат використовуємо спеціальний метод
@@ -443,10 +440,10 @@ async def get_current_weather_by_coordinates(
             longitude=longitude
         )
 
-        # Форматуємо відповідь
+        # Форматування відповіді
         weather_data = weather_service.format_weather_response(raw_weather_data)
 
-        # Зберігаємо в історію
+        # Збереження в історію
         await save_weather_request(
             db=db,
             user_id=current_user.id,

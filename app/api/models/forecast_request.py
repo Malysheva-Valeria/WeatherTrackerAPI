@@ -51,7 +51,7 @@ class ForecastRequest(Base):
     # Часові мітки
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow, nullable=False)
 
-    # Relationships
+    # Звʼязки
     user = relationship("User", back_populates="forecast_requests")
 
     def __repr__(self):
@@ -59,7 +59,7 @@ class ForecastRequest(Base):
 
     @property
     def is_expired(self) -> bool:
-        """Перевірити чи застарів кешований прогноз"""
+        """Перевірка чи застарів кешований прогноз"""
         if not self.is_cached or not self.cache_expires_at:
             return True
         return datetime.utcnow() > self.cache_expires_at
@@ -130,7 +130,7 @@ class DailyForecast(Base):
     sunset_time = Column(DateTime(timezone=True), nullable=True)
     daylight_hours = Column(Float, nullable=True)
 
-    # Relationships
+    # Звʼязки
     forecast_request = relationship("ForecastRequest", backref="daily_forecasts")
 
     def __repr__(self):

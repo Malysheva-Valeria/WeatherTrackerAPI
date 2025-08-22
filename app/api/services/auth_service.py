@@ -40,7 +40,7 @@ class AuthService:
 
     def verify_password(self, plain_password: str, hashed_password: str) -> bool:
         """
-        Перевірити чи збігається пароль з хешем
+        Перевірка чи збігається пароль з хешем
 
         Args:
             plain_password: Пароль в відкритому вигляді
@@ -56,7 +56,7 @@ class AuthService:
 
     def get_password_hash(self, password: str) -> str:
         """
-        Захешувати пароль з використанням bcrypt
+        Хешування пароля з використанням bcrypt
 
         Args:
             password: Пароль в відкритому вигляді
@@ -68,18 +68,18 @@ class AuthService:
 
     def create_access_token(self, data: dict, expires_delta: Optional[timedelta] = None) -> str:
         """
-        Створити JWT access token
+        Створення JWT access token
 
         Args:
             data: Дані для включення в токен (зазвичай user_id, username)
-            expires_delta: Час життя токену (якщо не вказано - використовується default)
+            expires_delta: Час життя токену
 
         Returns:
             str: JWT токен
         """
         to_encode = data.copy()
 
-        # Встановлюємо час закінчення дії токену
+        # Встановлення часу закінчення дії токену
         if expires_delta:
             expire = datetime.utcnow() + expires_delta
         else:
@@ -87,13 +87,13 @@ class AuthService:
 
         to_encode.update({"exp": expire, "iat": datetime.utcnow()})
 
-        # Кодуємо JWT токен
+        # Кодування JWT токену
         encoded_jwt = jwt.encode(to_encode, self.SECRET_KEY, algorithm=self.ALGORITHM)
         return encoded_jwt
 
     def verify_token(self, token: str) -> Optional[dict]:
         """
-        Перевірити та декодувати JWT токен
+        Перевірка та декодування JWT токену
 
         Args:
             token: JWT токен
@@ -111,7 +111,7 @@ class AuthService:
 
     def authenticate_user(self, db: Session, username: str, password: str) -> Optional[User]:
         """
-        Аутентифікувати користувача по username/email та паролю
+        Аутентифікація користувача по username/email та паролю
 
         Args:
             db: Сесія бази даних
@@ -121,20 +121,20 @@ class AuthService:
         Returns:
             User: Об'єкт користувача або None якщо аутентифікація не вдалась
         """
-        # Шукаємо користувача по username або email
+        # Пошук користувача по username або email
         user = db.query(User).filter(
             (User.username == username) | (User.email == username)
         ).first()
 
-        # Перевіряємо чи користувач існує
+        # Перевірка чи користувач існує
         if not user:
             return None
 
-        # Перевіряємо чи користувач активний
+        # Перевірка чи користувач активний
         if not user.is_active:
             return None
 
-        # Перевіряємо пароль
+        # Перевірка пароля
         if not self.verify_password(password, user.hashed_password):
             return None
 
@@ -142,7 +142,7 @@ class AuthService:
 
     def get_user_by_token(self, db: Session, token: str) -> Optional[User]:
         """
-        Отримати користувача по JWT токену
+        Отримання користувача по JWT токену
 
         Args:
             db: Сесія бази даних
@@ -155,7 +155,7 @@ class AuthService:
         if payload is None:
             return None
 
-        # Отримуємо user_id з токену
+        # Отримання user_id з токену
         user_id = payload.get("sub")
         if user_id is None:
             return None
@@ -165,10 +165,10 @@ class AuthService:
         except (ValueError, TypeError):
             return None
 
-        # Шукаємо користувача в базі даних
+        # Пошук користувача в базі даних
         user = db.query(User).filter(User.id == user_id).first()
 
-        # Перевіряємо чи користувач активний
+        # Перевірка чи користувач активний
         if user and not user.is_active:
             return None
 
@@ -176,7 +176,7 @@ class AuthService:
 
     def create_user_tokens(self, user: User) -> dict:
         """
-        Створити токени для користувача
+        Створення токенів для користувача
 
         Args:
             user: Об'єкт користувача
@@ -206,7 +206,7 @@ class AuthService:
 
     def validate_password_strength(self, password: str) -> Tuple[bool, str]:
         """
-        Перевірити силу паролю
+        Перевірка сили пароля
 
         Args:
             password: Пароль для перевірки
@@ -226,14 +226,14 @@ class AuthService:
         if not any(c.isalpha() for c in password):
             return False, "Пароль має містити мінімум одну літеру"
 
-        if password.lower() in ['password', '12345678', 'qwerty123', 'password123']:
+        if password.lower() in ['password', '12345678', 'qwerty123', 'password123','11111111']:
             return False, "Пароль занадто простий, оберіть більш складний"
 
         return True, "Пароль відповідає вимогам безпеки"
 
     def update_user_login_info(self, db: Session, user: User) -> None:
         """
-        Оновити інформацію про логін користувача
+        Оновлення інформації про логін користувача
 
         Args:
             db: Сесія бази даних
@@ -245,13 +245,13 @@ class AuthService:
         db.refresh(user)
 
 
-# Створюємо глобальний екземпляр сервісу
+# Створення глобального екземпляра сервісу
 auth_service = AuthService()
 
 
 def get_auth_service() -> AuthService:
     """
-    Отримати екземпляр сервісу аутентифікації
+    Отримання екземпляра сервісу аутентифікації
 
     Returns:
         AuthService: Екземпляр сервісу аутентифікації

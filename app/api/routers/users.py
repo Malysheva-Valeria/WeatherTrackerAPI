@@ -142,7 +142,7 @@ async def change_password(
             detail="Новий пароль має відрізнятись від поточного"
         )
 
-    # Оновлення паролю
+    # Оновлення пароля
     current_user.hashed_password = auth_service.get_password_hash(password_data.new_password)
     db.commit()
 

@@ -1,6 +1,5 @@
 """
-Виправлені Pydantic схеми для прогнозів погоди
-app/api/schemas/forecast.py
+Pydantic схеми для прогнозів погоди
 """
 
 from pydantic import BaseModel, Field, validator
@@ -83,7 +82,7 @@ class ForecastRequestSchema(BaseModel):
 
     @validator('city')
     def validate_location_provided(cls, v, values):
-        """Перевірити що вказано або місто, або координати"""
+        """Перевірка що вказано або місто, або координати"""
         lat = values.get('latitude')
         lon = values.get('longitude')
 
@@ -124,7 +123,7 @@ class ForecastSummary(BaseModel):
 
 
 class ForecastResponse(BaseModel):
-    """Схема відповіді з прогнозом погоди (БЕЗ TimestampSchema)"""
+    """Схема відповіді з прогнозом погоди"""
 
     # Локація
     city: str = Field(..., description="Назва міста")

@@ -46,7 +46,7 @@ async def register(
     """
     auth_service = get_auth_service()
 
-    # Перевіряємо силу паролю
+    # Перевірка сили пароля
     is_strong, message = auth_service.validate_password_strength(user_data.password)
     if not is_strong:
         raise HTTPException(
@@ -54,7 +54,7 @@ async def register(
             detail=message
         )
 
-    # Перевіряємо чи користувач вже існує
+    # Перевірка чи користувач вже існує
     existing_user = db.query(User).filter(
         (User.email == user_data.email) | (User.username == user_data.username)
     ).first()
@@ -71,7 +71,7 @@ async def register(
                 detail="Користувач з таким username вже існує"
             )
 
-    # Створюємо нового користувача
+    # Створення нового користувача
     hashed_password = auth_service.get_password_hash(user_data.password)
 
     new_user = User(
@@ -81,14 +81,14 @@ async def register(
         first_name=user_data.first_name,
         last_name=user_data.last_name,
         is_active=True,
-        is_verified=False  # Потребує верифікації email
+        is_verified=False  # Треба верифікувати email
     )
 
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
 
-    # Створюємо токени для нового користувача
+    # Створення токенів для нового користувача
     tokens = auth_service.create_user_tokens(new_user)
 
     return RegisterResponse(
@@ -120,7 +120,7 @@ async def login(
     """
     auth_service = get_auth_service()
 
-    # Аутентифікуємо користувача
+    # Аутентифікація користувача
     user = auth_service.authenticate_user(db, form_data.username, form_data.password)
 
     if not user:
@@ -130,10 +130,10 @@ async def login(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    # Оновлюємо інформацію про логін
+    # Оновлення інформації про логін
     auth_service.update_user_login_info(db, user)
 
-    # Створюємо токени
+    # Створення токенів
     tokens = auth_service.create_user_tokens(user)
 
     return LoginResponse(
@@ -174,9 +174,6 @@ async def refresh_token(
 async def logout():
     """
     Логаут користувача
-
-    Note: В JWT системі логаут відбувається на клієнті шляхом видалення токену.
-    Для повноцінного логауту можна реалізувати blacklist токенів.
 
     Returns:
         dict: Повідомлення про успішний логаут

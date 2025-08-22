@@ -170,7 +170,7 @@ class WeatherService:
             if response.status_code == 200:
                 data = response.json()
 
-                # Кешуємо результат
+                # Кешування результату
                 self.cache[cache_key] = {
                     'data': data,
                     'cached_at': datetime.now()
@@ -235,7 +235,7 @@ class WeatherService:
                                 longitude: float = None, days: int = 5,
                                 user_id: int = None, db: Session = None) -> ForecastResponse:
         """
-        Отримати прогноз погоди на кілька днів
+        Отримання прогнозу погоди на кілька днів
 
         Args:
             city: Назва міста
@@ -256,7 +256,7 @@ class WeatherService:
             if days < 1 or days > 7:
                 raise ValueError("Кількість днів має бути від 1 до 7")
 
-            # Перевіряємо кеш
+            # Перевірка кешу
             cached_forecast = None
             if db and user_id:
                 cached_forecast = self._get_cached_forecast(db, city, latitude, longitude, days, user_id)
@@ -264,13 +264,13 @@ class WeatherService:
             if cached_forecast:
                 return self._convert_cached_forecast_to_response(cached_forecast)
 
-            # Отримуємо дані з OpenWeather API
+            # Отримання даних з OpenWeather API
             raw_forecast_data = await self._fetch_forecast_from_api(city, latitude, longitude, days)
 
-            # Форматуємо відповідь
+            # Форматування відповіді
             forecast_response = self._format_forecast_response(raw_forecast_data, days)
 
-            # Зберігаємо в БД
+            # Збереження в БД
             if db and user_id:
                 await self._save_forecast_to_db(db, user_id, forecast_response, raw_forecast_data)
 
@@ -285,21 +285,21 @@ class WeatherService:
 
     async def _fetch_forecast_from_api(self, city: str = None, latitude: float = None,
                                        longitude: float = None, days: int = 5) -> dict:
-        """Отримати прогноз з OpenWeather API"""
+        """Отримання прогнозу з OpenWeather API"""
 
-        # Формуємо URL для 5-day forecast API
+        # Формування URL для 5-day forecast API
         if city:
             url = f"{self.base_url}/forecast?q={city}&appid={self.api_key}&units=metric&lang=uk"
         else:
             url = f"{self.base_url}/forecast?lat={latitude}&lon={longitude}&appid={self.api_key}&units=metric&lang=uk"
 
-        # Виконуємо запит
+        # Виконання запиту
         async with httpx.AsyncClient(timeout=self.timeout) as client:
             response = await client.get(url)
             response.raise_for_status()
             data = response.json()
 
-        # Додаємо метадані
+        # Додавання метаданих
         data['cached'] = False
         data['mock'] = False
         data['request_timestamp'] = datetime.utcnow().isoformat()
@@ -307,21 +307,21 @@ class WeatherService:
         return data
 
     def _format_forecast_response(self, raw_data: dict, days: int) -> ForecastResponse:
-        """Форматувати відповідь прогнозу з OpenWeather API"""
+        """Форматування відповіді прогнозу з OpenWeather API"""
 
         city_info = raw_data['city']
         forecast_list = raw_data['list']
 
-        # Групуємо прогнози по днях
+        # Групування прогнозів по днях
         daily_forecasts = self._group_forecasts_by_day(forecast_list, days)
 
-        # Створюємо схеми для кожного дня
+        # Створення схем для кожного дня
         daily_forecast_schemas = []
         for day_offset, day_data in enumerate(daily_forecasts):
             daily_schema = self._create_daily_forecast_schema(day_data, day_offset)
             daily_forecast_schemas.append(daily_schema)
 
-        # Створюємо загальну статистику
+        # Створення загальної статистики
         summary = self._calculate_forecast_summary(daily_forecasts)
 
         return ForecastResponse(
@@ -339,13 +339,13 @@ class WeatherService:
         )
 
     def _group_forecasts_by_day(self, forecast_list: List[dict], days: int) -> List[List[dict]]:
-        """Групувати прогнози по днях"""
+        """Групування прогнозів по днях"""
 
         # Словник для групування по датах
         daily_groups = {}
 
         for forecast in forecast_list:
-            # Отримуємо дату прогнозу
+            # Отримання дати прогнозу
             dt = datetime.fromtimestamp(forecast['dt'])
             date_key = dt.date()
 
@@ -354,17 +354,17 @@ class WeatherService:
 
             daily_groups[date_key].append(forecast)
 
-        # Сортуємо по датах і беремо потрібну кількість днів
+        # Сортування по датах і отримуємо потрібну кількість днів
         sorted_dates = sorted(daily_groups.keys())
         return [daily_groups[date] for date in sorted_dates[:days]]
 
     def _create_daily_forecast_schema(self, day_forecasts: List[dict], day_offset: int) -> DailyForecastData:
-        """Створити схему для одного дня"""
+        """Створення схем для одного дня"""
 
-        # Вибираємо основний прогноз (середина дня)
+        # Вибір основного прогнозу (середина дня)
         main_forecast = day_forecasts[len(day_forecasts) // 2]
 
-        # Рахуємо мін/макс температуру за день
+        # Підрахунок мін/макс температури за день
         temps = [f['main']['temp'] for f in day_forecasts]
         feels_like_temps = [f['main']['feels_like'] for f in day_forecasts]
 
@@ -405,7 +405,7 @@ class WeatherService:
         )
 
     def _calculate_forecast_summary(self, daily_forecasts: List[List[dict]]) -> ForecastSummary:
-        """Розрахувати загальну статистику прогнозу"""
+        """Розрахунок загальної статистики прогнозу"""
 
         all_temps = []
         conditions = []
@@ -413,7 +413,7 @@ class WeatherService:
         rainy_days = 0
 
         for day_forecasts in daily_forecasts:
-            # Температури
+            # Температура
             day_temps = [f['main']['temp'] for f in day_forecasts]
             all_temps.extend(day_temps)
 
@@ -444,7 +444,7 @@ class WeatherService:
         )
 
     def _generate_mock_forecast(self, location: str, days: int) -> ForecastResponse:
-        """Генерувати mock прогноз для тестування"""
+        """Генерація mock прогнозу для тестування"""
 
         daily_forecasts = []
         base_temp = 18.0
@@ -515,9 +515,9 @@ class WeatherService:
 
     def _get_cached_forecast(self, db: Session, city: str = None, latitude: float = None,
                              longitude: float = None, days: int = 5, user_id: int = None) -> Optional[ForecastRequest]:
-        """Отримати кешований прогноз з БД"""
+        """Отримання кешованого прогнозу з БД"""
 
-        # Шукаємо недавній прогноз (останні 1 година)
+        # Пошук недавнього прогнозу (останню годину)
         cache_time = datetime.utcnow() - timedelta(hours=1)
 
         query = db.query(ForecastRequest).filter(
@@ -537,9 +537,9 @@ class WeatherService:
         return query.order_by(ForecastRequest.request_time.desc()).first()
 
     def _convert_cached_forecast_to_response(self, cached_forecast: ForecastRequest) -> ForecastResponse:
-        """Конвертувати кешований прогноз в відповідь"""
+        """Конвертація кешованого прогнозу в відповідь"""
 
-        # Отримуємо daily forecasts
+        # Отримання daily forecasts
         daily_forecasts = []
         for daily in cached_forecast.daily_forecasts:
             daily_schema = DailyForecastData(
@@ -580,9 +580,9 @@ class WeatherService:
             avg_temperature=cached_forecast.avg_temperature,
             min_temperature=cached_forecast.min_temperature,
             max_temperature=cached_forecast.max_temperature,
-            dominant_condition="Clear",  # Можна розрахувати з daily forecasts
-            rainy_days=0,  # Можна розрахувати з daily forecasts
-            precipitation_total=0.0  # Можна розрахувати з daily forecasts
+            dominant_condition="Clear",
+            rainy_days=0,
+            precipitation_total=0.0
         )
 
         return ForecastResponse(
@@ -601,10 +601,10 @@ class WeatherService:
 
     async def _save_forecast_to_db(self, db: Session, user_id: int, forecast_response: ForecastResponse,
                                    raw_data: dict):
-        """Зберегти прогноз в базу даних"""
+        """Збереження прогнозу в базу даних"""
 
         try:
-            # Створюємо основний запис прогнозу
+            # Створення основного запису прогнозу
             forecast_request = ForecastRequest(
                 user_id=user_id,
                 city=forecast_response.city,
@@ -623,9 +623,9 @@ class WeatherService:
             )
 
             db.add(forecast_request)
-            db.flush()  # Отримуємо ID
+            db.flush()  # get ID
 
-            # Створюємо записи для кожного дня
+            # Створення записів для кожного дня
             for daily_forecast in forecast_response.daily_forecasts:
                 daily_record = DailyForecast(
                     forecast_request_id=forecast_request.id,
@@ -657,7 +657,6 @@ class WeatherService:
             db.rollback()
             logger.error(f"Помилка збереження прогнозу: {e}")
 
-    # Додай ці методи до класу WeatherService в app/api/services/weather_service.py
 
     async def get_current_weather_by_coordinates(self, latitude: float, longitude: float, use_mock: bool = False) -> \
     Dict[str, Any]:
@@ -714,13 +713,13 @@ class WeatherService:
             if response.status_code == 200:
                 data = response.json()
 
-                # Додаємо координати для зручності
+                # Додавання координат для зручності
                 data['request_coordinates'] = {
                     'latitude': latitude,
                     'longitude': longitude
                 }
 
-                # Кешуємо результат
+                # Кешування результату
                 self.cache[cache_key] = {
                     'data': data,
                     'cached_at': datetime.now()
@@ -758,7 +757,7 @@ class WeatherService:
     def _get_mock_weather_by_coordinates(self, latitude: float, longitude: float) -> Dict[str, Any]:
         """Mock дані для погоди по координатах"""
 
-        # Визначаємо регіон по координатах для більш реалістичних даних
+        # Визначення регіону по координатах для більш реалістичних даних
         city_name = self._guess_city_by_coordinates(latitude, longitude)
         country_code = self._guess_country_by_coordinates(latitude, longitude)
 
@@ -809,7 +808,7 @@ class WeatherService:
             (52.5200, 13.4050, "Berlin")
         ]
 
-        # Знаходимо найближче місто
+        # Пошук найближчого міста
         min_distance = float('inf')
         closest_city = "Unknown Location"
 
@@ -819,7 +818,7 @@ class WeatherService:
                 min_distance = distance
                 closest_city = city_name
 
-        # Якщо дуже далеко від відомих міст, генеруємо назву
+        # Якщо дуже далеко від відомих міст, генерація назви
         if min_distance > 10:  # Більше ~10 градусів
             return f"Location {latitude:.2f}, {longitude:.2f}"
 

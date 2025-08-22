@@ -31,5 +31,5 @@ class BaseModel(Base):
 
     @classmethod
     def get_table_name(cls):
-        """Отримати назву таблиці"""
+        """Отримання назви таблиці"""
         return cls.__tablename__
