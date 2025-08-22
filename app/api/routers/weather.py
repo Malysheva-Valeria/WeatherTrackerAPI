@@ -6,7 +6,8 @@ Weather Router для WeatherTracker API
 
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
+
 from app.dependencies import get_db, get_current_active_user
 from app.api.services.weather_service import get_weather_service
 from app.api.models.user import User
@@ -18,9 +19,55 @@ from app.api.schemas.weather import (
     WeatherHistoryResponse
 )
 from app.api.schemas.base import MessageResponse
+from app.api.schemas.forecast import ForecastResponse
 
+import logging
+from datetime import datetime
+
+
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/weather", tags=["Weather"])
 
+WeatherResponse = CurrentWeatherResponse
+
+async def save_weather_request(
+        db: Session,
+        user_id: int,
+        city: str,
+        country: str,
+        weather_data: dict,
+        is_cached: bool = False,
+        is_mock: bool = False
+) -> None:
+    """Зберігає погодний запит в історію"""
+    try:
+        from app.api.models.weather_request import WeatherRequest as WeatherRequestModel
+
+        weather_request = WeatherRequestModel(
+            user_id=user_id,
+            city=city,
+            country=country,
+            temperature=weather_data.get('temperature'),
+            feels_like=weather_data.get('feels_like'),
+            description=weather_data.get('description', ''),
+            weather_condition=weather_data.get('condition', ''),
+            humidity=weather_data.get('humidity'),
+            pressure=weather_data.get('pressure'),
+            wind_speed=weather_data.get('wind_speed'),
+            wind_direction=weather_data.get('wind_direction'),
+            request_time=datetime.utcnow(),
+            response_data=weather_data,
+            is_cached=is_cached,
+            is_mock=is_mock
+        )
+
+        db.add(weather_request)
+        db.commit()
+        logger.info(f"Weather request saved for user {user_id}, city {city}")
+
+    except Exception as e:
+        logger.error(f"Error saving weather request: {e}")
+        db.rollback()
 
 @router.get("/current", response_model=CurrentWeatherResponse)
 async def get_current_weather(
@@ -251,3 +298,176 @@ async def get_weather_stats(
             "time": last_request.request_time.isoformat() if last_request else None
         }
     }
+
+@router.get("/forecast", response_model=ForecastResponse)
+async def get_weather_forecast(
+        city: str = Query(None, description="Назва міста"),
+        latitude: float = Query(None, ge=-90, le=90, description="Широта"),
+        longitude: float = Query(None, ge=-180, le=180, description="Довгота"),
+        days: int = Query(5, ge=1, le=7, description="Кількість днів прогнозу (1-7)"),
+        current_user: User = Depends(get_current_active_user),
+        db: Session = Depends(get_db)
+):
+    """
+    Отримати прогноз погоди на кілька днів
+
+    Можна вказати або місто, або координати:
+    - **city**: Назва міста (наприклад: Kyiv, London, New York)
+    - **latitude + longitude**: Координати локації
+    - **days**: Кількість днів прогнозу від 1 до 7
+
+    Прогноз включає:
+    - Температуру (мін/макс/середня) для кожного дня
+    - Погодні умови та детальний опис
+    - Атмосферні показники (вологість, тиск, видимість)
+    - Вітер та опади
+    - Загальну статистику за весь період
+    - Кешування результатів для швидкості
+    """
+    try:
+        # Валідація параметрів
+        if not city and (latitude is None or longitude is None):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Вкажіть або назву міста, або координати (latitude + longitude)"
+            )
+
+        # Отримуємо прогноз через weather service
+        weather_service = get_weather_service()
+        forecast = await weather_service.get_5day_forecast(
+            city=city,
+            latitude=latitude,
+            longitude=longitude,
+            days=days,
+            user_id=current_user.id,
+            db=db
+        )
+
+        return forecast
+
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Помилка отримання прогнозу погоди: {str(e)}"
+        )
+
+
+# Додай цей endpoint до app/api/routers/weather.py
+
+@router.get("/forecast/coordinates", response_model=ForecastResponse, tags=["Weather"])
+async def get_forecast_by_coordinates(
+        latitude: float = Query(..., ge=-90, le=90, description="Широта (-90 до 90)"),
+        longitude: float = Query(..., ge=-180, le=180, description="Довгота (-180 до 180)"),
+        days: int = Query(5, ge=1, le=7, description="Кількість днів прогнозу (1-7)"),
+        db: Session = Depends(get_db),
+        current_user: User = Depends(get_current_active_user)
+):
+    """
+    Отримати прогноз погоди по координатах (широта/довгота)
+
+    Цей endpoint дозволяє отримати точний прогноз для будь-якої точки на Землі
+    без необхідності знати назву міста.
+
+    **Параметри:**
+    - **latitude**: Широта від -90 (Південний полюс) до 90 (Північний полюс)
+    - **longitude**: Довгота від -180 до 180 градусів
+    - **days**: Кількість днів прогнозу (від 1 до 7)
+
+    **Приклади координат:**
+    - Kyiv: lat=50.4501, lon=30.5234
+    - London: lat=51.5074, lon=-0.1278
+    - New York: lat=40.7128, lon=-74.0060
+    - Sydney: lat=-33.8688, lon=151.2093
+    """
+    try:
+        logger.info(
+            f"Запит прогнозу по координатах: {latitude}, {longitude} на {days} днів для користувача {current_user.id}")
+
+        # Отримуємо прогноз від сервісу
+        weather_service = get_weather_service()
+        forecast_data = await weather_service.get_5day_forecast(
+            city=None,  # Без міста
+            latitude=latitude,
+            longitude=longitude,
+            days=days,
+            user_id=current_user.id,
+            db=db
+        )
+
+        logger.info(
+            f"Прогноз по координатах отримано успішно: {forecast_data.city if hasattr(forecast_data, 'city') else 'координати'}")
+        return forecast_data
+
+    except ValueError as e:
+        logger.warning(f"Помилка валідації координат: {e}")
+        raise HTTPException(
+            status_code=400,
+            detail=f"Помилка координат: {str(e)}"
+        )
+    except Exception as e:
+        logger.error(f"Помилка отримання прогнозу по координатах: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Помилка отримання прогнозу по координатах: {str(e)}"
+        )
+
+
+@router.get("/current/coordinates", response_model=WeatherResponse, tags=["Weather"])
+async def get_current_weather_by_coordinates(
+        latitude: float = Query(..., ge=-90, le=90, description="Широта (-90 до 90)"),
+        longitude: float = Query(..., ge=-180, le=180, description="Довгота (-180 до 180)"),
+        db: Session = Depends(get_db),
+        current_user: User = Depends(get_current_active_user)
+):
+    """
+    Отримати поточну погоду по координатах
+
+    **Параметри:**
+    - **latitude**: Широта від -90 до 90 градусів
+    - **longitude**: Довгота від -180 до 180 градусів
+    """
+    try:
+        logger.info(f"Запит поточної погоди по координатах: {latitude}, {longitude} для користувача {current_user.id}")
+
+        # Отримуємо погоду від сервісу
+        weather_service = get_weather_service()
+
+        # Для координат використовуємо спеціальний метод
+        raw_weather_data = await weather_service.get_current_weather_by_coordinates(
+            latitude=latitude,
+            longitude=longitude
+        )
+
+        # Форматуємо відповідь
+        weather_data = weather_service.format_weather_response(raw_weather_data)
+
+        # Зберігаємо в історію
+        await save_weather_request(
+            db=db,
+            user_id=current_user.id,
+            city=weather_data.get("city", f"Координати {latitude}, {longitude}"),
+            country=weather_data.get("country", "Unknown"),
+            weather_data=weather_data,
+            is_cached=weather_data.get("cached", False),
+            is_mock=weather_data.get("mock", False)
+        )
+        logger.info(f"Поточна погода по координатах отримана: {weather_data.get('city', 'координати')}")
+        return weather_data
+
+    except ValueError as e:
+        logger.warning(f"Помилка валідації координат: {e}")
+        raise HTTPException(
+            status_code=400,
+            detail=f"Помилка координат: {str(e)}"
+        )
+    except Exception as e:
+        logger.error(f"Помилка отримання поточної погоди по координатах: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Помилка отримання поточної погоди: {str(e)}"
+        )

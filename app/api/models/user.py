@@ -40,6 +40,10 @@ class User(Base):
     # Зв'язки з іншими таблицями
     weather_requests = relationship("WeatherRequest", back_populates="user", cascade="all, delete-orphan")
 
+    # Погодні звʼязки
+    weather_requests = relationship("WeatherRequest", back_populates="user", cascade="all, delete-orphan")
+    forecast_requests = relationship("ForecastRequest", back_populates="user",
+                                     cascade="all, delete-orphan")
     def __repr__(self):
         """Строкове представлення користувача"""
         return f"<User(id={self.id}, username='{self.username}', email='{self.email}')>"
