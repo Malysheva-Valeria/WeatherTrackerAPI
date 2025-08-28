@@ -5,11 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="d8eb42ed-5739-4a2d-8762-54f03a0e0555" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/app/api/routers/analytics.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app/api/schemas/analytics.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app/api/services/analytics_service.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/main.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -40,7 +36,7 @@
     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;feature/forecast&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;feature/analytics&quot;,
     &quot;last_opened_file_path&quot;: &quot;/Users/satqy/PycharmProjects/WeatherTrackerAPI/app/api/repositories&quot;,
     &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
     &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
@@ -85,7 +81,8 @@
       <workItem from="1755767252034" duration="822000" />
       <workItem from="1755857969869" duration="5368000" />
       <workItem from="1756233880509" duration="545000" />
-      <workItem from="1756370621849" duration="3059000" />
+      <workItem from="1756370621849" duration="3204000" />
+      <workItem from="1756412265991" duration="628000" />
     </task>
     <servers />
   </component>
