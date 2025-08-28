@@ -5,14 +5,11 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="d8eb42ed-5739-4a2d-8762-54f03a0e0555" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/app/api/routers/analytics.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/api/schemas/analytics.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/api/services/analytics_service.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/api/models/base.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/api/models/base.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/api/models/forecast_request.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/api/models/forecast_request.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/api/routers/auth.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/api/routers/auth.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/api/routers/users.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/api/routers/users.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/api/routers/weather.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/api/routers/weather.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/api/schemas/forecast.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/api/schemas/forecast.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/api/services/auth_service.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/api/services/auth_service.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/main.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -86,7 +83,9 @@
       <workItem from="1755634252310" duration="12000" />
       <workItem from="1755674374100" duration="11039000" />
       <workItem from="1755767252034" duration="822000" />
-      <workItem from="1755857969869" duration="4594000" />
+      <workItem from="1755857969869" duration="5368000" />
+      <workItem from="1756233880509" duration="545000" />
+      <workItem from="1756370621849" duration="3059000" />
     </task>
     <servers />
   </component>
