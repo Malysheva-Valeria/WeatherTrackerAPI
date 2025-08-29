@@ -36,7 +36,7 @@
     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;feature/analytics&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;develop&quot;,
     &quot;last_opened_file_path&quot;: &quot;/Users/satqy/PycharmProjects/WeatherTrackerAPI/app/api/repositories&quot;,
     &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
     &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
@@ -83,6 +83,7 @@
       <workItem from="1756233880509" duration="545000" />
       <workItem from="1756370621849" duration="3204000" />
       <workItem from="1756412265991" duration="628000" />
+      <workItem from="1756500155634" duration="1000" />
     </task>
     <servers />
   </component>

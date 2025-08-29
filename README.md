@@ -115,7 +115,7 @@ pytest
 pytest --cov=app
 
 # Запуск конкретного тестового файлу
-pytest tests/test_auth.py -v
+pytest tests/test_auth_service.py -v
 ```
 
 ## 🔧 Розробка

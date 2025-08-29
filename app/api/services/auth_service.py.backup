@@ -38,14 +38,6 @@ class AuthService:
         self.ALGORITHM = settings.ALGORITHM
         self.ACCESS_TOKEN_EXPIRE_MINUTES = settings.ACCESS_TOKEN_EXPIRE_MINUTES
 
-    def hash_password(self, password: str) -> str:
-        """Хешує пароль за допомогою bcrypt"""
-        return self.pwd_context.hash(password)
-    
-    def verify_password(self, plain_password: str, hashed_password: str) -> bool:
-        """Перевіряє пароль з хешем"""
-        return self.pwd_context.verify(plain_password, hashed_password)
-
     def verify_password(self, plain_password: str, hashed_password: str) -> bool:
         """
         Перевірка чи збігається пароль з хешем
