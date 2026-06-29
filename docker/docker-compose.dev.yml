@@ -1,0 +1,49 @@
+# Dev-стек: гарячий перезапуск, код примонтований томом, DEBUG увімкнено.
+# Запуск:  docker compose -f docker/docker-compose.dev.yml up --build
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: weather_user
+      POSTGRES_PASSWORD: dev_password
+      POSTGRES_DB: weathertracker
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data_dev:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U weather_user"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    environment:
+      ENVIRONMENT: development
+      DEBUG: "true"
+      SECRET_KEY: dev-insecure-secret-key
+      DATABASE_URL: postgresql://weather_user:dev_password@db:5432/weathertracker
+      REDIS_URL: redis://redis:6379/0
+      OPENWEATHER_API_KEY: ${OPENWEATHER_API_KEY:-}
+      BACKEND_CORS_ORIGINS: http://localhost:3000,http://127.0.0.1:3000
+    volumes:
+      # Монтуємо код для live-reload; alembic теж, щоб ганяти міграції з контейнера
+      - ../app:/app/app
+      - ../alembic:/app/alembic
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  postgres_data_dev:
