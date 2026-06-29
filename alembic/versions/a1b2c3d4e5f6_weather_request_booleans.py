@@ -35,14 +35,27 @@ def _existing_columns() -> set:
     return {col["name"] for col in inspector.get_columns(TABLE)}
 
 
+def _column_types() -> dict:
+    """Назва колонки -> рядкове представлення її типу (для перевірки Boolean)."""
+    bind = op.get_bind()
+    inspector = inspect(bind)
+    if TABLE not in inspector.get_table_names():
+        return {}
+    return {col["name"]: str(col["type"]).upper() for col in inspector.get_columns(TABLE)}
+
+
 def upgrade() -> None:
-    """String(10) -> Boolean для is_cached/is_mock."""
+    """String(10) -> Boolean для is_cached/is_mock (no-op, якщо вже Boolean)."""
     bind = op.get_bind()
     columns = _existing_columns()
+    types = _column_types()
     is_postgres = bind.dialect.name == "postgresql"
 
     for column in BOOL_COLUMNS:
         if column not in columns:
+            continue
+        # Якщо колонка вже Boolean (її створили одразу таким типом) — пропускаємо.
+        if "BOOL" in types.get(column, ""):
             continue
         if is_postgres:
             # Явний CAST зі строкових значень ('true'/'false'/'') у boolean
@@ -75,24 +88,7 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    """Boolean -> String(10) (зворотна конвертація)."""
-    bind = op.get_bind()
-    columns = _existing_columns()
-    is_postgres = bind.dialect.name == "postgresql"
-
-    for column in BOOL_COLUMNS:
-        if column not in columns:
-            continue
-        if is_postgres:
-            op.execute(
-                f"ALTER TABLE {TABLE} "
-                f"ALTER COLUMN {column} TYPE VARCHAR(10) "
-                f"USING (CASE WHEN {column} THEN 'true' ELSE 'false' END)"
-            )
-        else:
-            with op.batch_alter_table(TABLE) as batch_op:
-                batch_op.alter_column(
-                    column,
-                    type_=sa.String(length=10),
-                    existing_type=sa.Boolean(),
-                )
+    """No-op: у канонічному ланцюзі колонки створюються як Boolean одразу
+    (fbef48a236e0), а скасування таблиці робить її downgrade. Повертати тип
+    назад до String немає сенсу й це лише зіпсувало б схему."""
+    pass

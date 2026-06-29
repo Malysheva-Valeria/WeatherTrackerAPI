@@ -26,15 +26,15 @@ def upgrade() -> None:
     sa.Column('username', sa.String(length=50), nullable=False),
     sa.Column('email', sa.String(length=100), nullable=False),
     sa.Column('hashed_password', sa.String(length=255), nullable=False),
-    sa.Column('is_active', sa.Boolean(), nullable=False),
-    sa.Column('is_verified', sa.Boolean(), nullable=False),
-    sa.Column('is_superuser', sa.Boolean(), nullable=False),
+    sa.Column('is_active', sa.Boolean(), nullable=False, server_default=sa.true()),
+    sa.Column('is_verified', sa.Boolean(), nullable=False, server_default=sa.false()),
+    sa.Column('is_superuser', sa.Boolean(), nullable=False, server_default=sa.false()),
     sa.Column('first_name', sa.String(length=50), nullable=True),
     sa.Column('last_name', sa.String(length=50), nullable=True),
     sa.Column('last_login', sa.DateTime(timezone=True), nullable=True),
-    sa.Column('login_count', sa.Integer(), nullable=False),
-    sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
-    sa.Column('updated_at', sa.DateTime(timezone=True), nullable=False),
+    sa.Column('login_count', sa.Integer(), nullable=False, server_default='0'),
+    sa.Column('created_at', sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),
+    sa.Column('updated_at', sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_users_email'), 'users', ['email'], unique=True)

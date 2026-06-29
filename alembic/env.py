@@ -14,7 +14,10 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 # Імпорт моделей та конфігурації
 from app.config import settings
 from app.api.models.base import Base
-from app.api.models import User  # Імпорт всіх моделей
+# Імпорт усіх моделей, щоб вони зареєструвались у Base.metadata (для autogenerate)
+from app.api.models.user import User  # noqa: F401
+from app.api.models.weather_request import WeatherRequest  # noqa: F401
+from app.api.models.forecast_request import ForecastRequest, DailyForecast  # noqa: F401
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
