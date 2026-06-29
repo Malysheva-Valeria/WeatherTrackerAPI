@@ -29,7 +29,7 @@ jobs:
         run: ruff check app tests
 
       - name: Type check (mypy)
-        # Перевіряє типізовані модулі суворо; легасі/ORM-важкі виключені в mypy.ini
+        # Сувора перевірка типів по всьому app/ (моделі на Mapped[], pydantic-плагін)
         run: mypy app
 
       - name: Tests (pytest + coverage gate)

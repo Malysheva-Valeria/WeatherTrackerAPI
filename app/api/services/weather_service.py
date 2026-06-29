@@ -212,9 +212,9 @@ class WeatherService:
             "mock": raw_data.get("mock", False)
         }
 
-    async def get_5day_forecast(self, city: str = None, latitude: float = None,
-                                longitude: float = None, days: int = 5,
-                                user_id: int = None, db: Session = None) -> ForecastResponse:
+    async def get_5day_forecast(self, city: Optional[str] = None, latitude: Optional[float] = None,
+                                longitude: Optional[float] = None, days: int = 5,
+                                user_id: Optional[int] = None, db: Optional[Session] = None) -> ForecastResponse:
         """
         Отримання прогнозу погоди на кілька днів
 
@@ -264,8 +264,8 @@ class WeatherService:
                 return self._generate_mock_forecast(city or f"{latitude},{longitude}", days)
             raise e
 
-    async def _fetch_forecast_from_api(self, city: str = None, latitude: float = None,
-                                       longitude: float = None, days: int = 5) -> dict:
+    async def _fetch_forecast_from_api(self, city: Optional[str] = None, latitude: Optional[float] = None,
+                                       longitude: Optional[float] = None, days: int = 5) -> dict:
         """Отримання прогнозу з OpenWeather API"""
 
         # Параметри запиту (ключ передається через params, а не в URL —
@@ -331,7 +331,7 @@ class WeatherService:
         """Групування прогнозів по днях"""
 
         # Словник для групування по датах
-        daily_groups = {}
+        daily_groups: Dict[Any, List[dict]] = {}
 
         for forecast in forecast_list:
             # Отримання дати прогнозу
@@ -502,8 +502,9 @@ class WeatherService:
             expires_at=datetime.utcnow() + timedelta(hours=1)
         )
 
-    def _get_cached_forecast(self, db: Session, city: str = None, latitude: float = None,
-                             longitude: float = None, days: int = 5, user_id: int = None) -> Optional[ForecastRequest]:
+    def _get_cached_forecast(self, db: Session, city: Optional[str] = None, latitude: Optional[float] = None,
+                             longitude: Optional[float] = None, days: int = 5,
+                             user_id: Optional[int] = None) -> Optional[ForecastRequest]:
         """Отримання кешованого прогнозу з БД"""
 
         # Пошук недавнього прогнозу (останню годину)

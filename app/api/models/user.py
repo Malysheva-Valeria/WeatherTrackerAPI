@@ -1,12 +1,18 @@
 """
 User model для WeatherTracker API
 """
+from datetime import datetime
+from typing import TYPE_CHECKING, Optional
 
-from sqlalchemy import Boolean, Column, DateTime, Integer, String
-from sqlalchemy.orm import relationship
+from sqlalchemy import Boolean, DateTime, Integer, String
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 
 from app.api.models.base import Base
+
+if TYPE_CHECKING:
+    from app.api.models.forecast_request import ForecastRequest
+    from app.api.models.weather_request import WeatherRequest
 
 
 class User(Base):
@@ -15,33 +21,39 @@ class User(Base):
     __tablename__ = "users"
 
     # Основні поля
-    id = Column(Integer, primary_key=True, index=True)
-    username = Column(String(50), unique=True, index=True, nullable=False)
-    email = Column(String(100), unique=True, index=True, nullable=False)
-    hashed_password = Column(String(255), nullable=False)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    username: Mapped[str] = mapped_column(String(50), unique=True, index=True)
+    email: Mapped[str] = mapped_column(String(100), unique=True, index=True)
+    hashed_password: Mapped[str] = mapped_column(String(255))
 
     # Статус користувача
-    is_active = Column(Boolean, default=True, nullable=False)
-    is_verified = Column(Boolean, default=False, nullable=False)
-    is_superuser = Column(Boolean, default=False, nullable=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    is_verified: Mapped[bool] = mapped_column(Boolean, default=False)
+    is_superuser: Mapped[bool] = mapped_column(Boolean, default=False)
 
     # Персональна інформація
-    first_name = Column(String(50), nullable=True)
-    last_name = Column(String(50), nullable=True)
+    first_name: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    last_name: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
 
     # Інформація про активність
-    last_login = Column(DateTime(timezone=True), nullable=True)
-    login_count = Column(Integer, default=0, nullable=False)
+    last_login: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    login_count: Mapped[int] = mapped_column(Integer, default=0)
 
     # Часові мітки
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
 
-    # Зв'язки з іншими таблицями
-    weather_requests = relationship("WeatherRequest", back_populates="user", cascade="all, delete-orphan")
-    forecast_requests = relationship("ForecastRequest", back_populates="user",
-                                     cascade="all, delete-orphan")
-    def __repr__(self):
+    # Звʼязки з іншими таблицями
+    weather_requests: Mapped[list["WeatherRequest"]] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
+    )
+    forecast_requests: Mapped[list["ForecastRequest"]] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
+    )
+
+    def __repr__(self) -> str:
         """Строкове представлення користувача"""
         return f"<User(id={self.id}, username='{self.username}', email='{self.email}')>"
 
@@ -67,5 +79,5 @@ class User(Base):
             "is_active": self.is_active,
             "is_verified": self.is_verified,
             "created_at": self.created_at.isoformat() if self.created_at else None,
-            "last_login": self.last_login.isoformat() if self.last_login else None
+            "last_login": self.last_login.isoformat() if self.last_login else None,
         }

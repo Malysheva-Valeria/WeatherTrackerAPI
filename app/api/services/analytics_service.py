@@ -183,19 +183,21 @@ class AnalyticsService:
                                 'temperature_change': 0, 'data_points': 0}
                 }
 
-            # Аналіз температур
-            temperatures = [req.temperature for req in requests]
+            # Аналіз температур (None відсіяні запитом, але фільтруємо явно для типів)
+            temperatures = [req.temperature for req in requests if req.temperature is not None]
             min_temp = min(temperatures)
             max_temp = max(temperatures)
             avg_temp = sum(temperatures) / len(temperatures)
 
             # Найпопулярніше місто в аналізі
-            city_counts = {}
+            city_counts: dict[str, int] = {}
             for req in requests:
                 if req.city:
                     city_counts[req.city] = city_counts.get(req.city, 0) + 1
 
-            most_popular_city = max(city_counts.keys(), key=city_counts.get) if city_counts else (city or "No data")
+            most_popular_city = (
+                max(city_counts, key=lambda c: city_counts[c]) if city_counts else (city or "No data")
+            )
 
             return {
                 'city': most_popular_city,

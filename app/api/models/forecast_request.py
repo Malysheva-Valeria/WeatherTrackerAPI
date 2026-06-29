@@ -1,62 +1,63 @@
 """
 Модель ForecastRequest для збереження прогнозів погоди
 """
-
+from datetime import date as date_type
 from datetime import datetime, timezone
+from typing import TYPE_CHECKING, Any, Optional
 
-from sqlalchemy import JSON, Boolean, Column, Date, DateTime, Float, ForeignKey, Integer, String
-from sqlalchemy.orm import relationship
+from sqlalchemy import JSON, Boolean, Date, DateTime, Float, ForeignKey, Integer, String
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 
 from app.api.models.base import Base
+
+if TYPE_CHECKING:
+    from app.api.models.user import User
 
 
 class ForecastRequest(Base):
     """
     Модель для збереження прогнозів погоди на кілька днів
-
-    Зберігає:
-    - Інформацію про запит прогнозу
-    - Дані прогнозу на кожен день
-    - Метадані про джерело даних
     """
 
     __tablename__ = "forecast_requests"
 
     # Основні поля
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
 
     # Локація
-    city = Column(String(100), nullable=False, index=True)
-    country = Column(String(10), nullable=True)
-    latitude = Column(Float, nullable=True)
-    longitude = Column(Float, nullable=True)
+    city: Mapped[str] = mapped_column(String(100), index=True)
+    country: Mapped[Optional[str]] = mapped_column(String(10), nullable=True)
+    latitude: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    longitude: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
 
     # Параметри запиту
-    forecast_days = Column(Integer, nullable=False, default=5)  # Кількість днів прогнозу
-    request_time = Column(DateTime(timezone=True), server_default=func.now(), nullable=False, index=True)
+    forecast_days: Mapped[int] = mapped_column(Integer, default=5)
+    request_time: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), index=True
+    )
 
     # Метадані
-    is_cached = Column(Boolean, default=False, nullable=False)
-    is_mock = Column(Boolean, default=False, nullable=False)
-    cache_expires_at = Column(DateTime(timezone=True), nullable=True)
+    is_cached: Mapped[bool] = mapped_column(Boolean, default=False)
+    is_mock: Mapped[bool] = mapped_column(Boolean, default=False)
+    cache_expires_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
     # Дані прогнозу (JSON з усіма даними від API)
-    forecast_data = Column(JSON, nullable=False)
+    forecast_data: Mapped[Any] = mapped_column(JSON)
 
     # Швидкий доступ до основних показників (для аналітики)
-    avg_temperature = Column(Float, nullable=True)  # Середня температура за період
-    min_temperature = Column(Float, nullable=True)  # Мінімальна температура
-    max_temperature = Column(Float, nullable=True)  # Максимальна температура
+    avg_temperature: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    min_temperature: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    max_temperature: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
 
     # Часові мітки
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     # Звʼязки
-    user = relationship("User", back_populates="forecast_requests")
+    user: Mapped["User"] = relationship(back_populates="forecast_requests")
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<ForecastRequest(id={self.id}, city='{self.city}', days={self.forecast_days}, user_id={self.user_id})>"
 
     @property
@@ -79,7 +80,7 @@ class ForecastRequest(Base):
             "avg_temperature": self.avg_temperature,
             "min_temperature": self.min_temperature,
             "max_temperature": self.max_temperature,
-            "created_at": self.created_at.isoformat() if self.created_at else None
+            "created_at": self.created_at.isoformat() if self.created_at else None,
         }
 
 
@@ -92,50 +93,51 @@ class DailyForecast(Base):
     __tablename__ = "daily_forecasts"
 
     # Основні поля
-    id = Column(Integer, primary_key=True, index=True)
-    forecast_request_id = Column(Integer, ForeignKey("forecast_requests.id", ondelete="CASCADE"), nullable=False,
-                                 index=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    forecast_request_id: Mapped[int] = mapped_column(
+        ForeignKey("forecast_requests.id", ondelete="CASCADE"), index=True
+    )
 
     # Дата прогнозу
-    forecast_date = Column(Date, nullable=False, index=True)
-    day_offset = Column(Integer, nullable=False)  # 0=сьогодні, 1=завтра, і т.д.
+    forecast_date: Mapped[date_type] = mapped_column(Date, index=True)
+    day_offset: Mapped[int] = mapped_column(Integer)  # 0=сьогодні, 1=завтра, і т.д.
 
     # Температура
-    temperature_min = Column(Float, nullable=False)
-    temperature_max = Column(Float, nullable=False)
-    temperature_avg = Column(Float, nullable=True)
-    feels_like_min = Column(Float, nullable=True)
-    feels_like_max = Column(Float, nullable=True)
+    temperature_min: Mapped[float] = mapped_column(Float)
+    temperature_max: Mapped[float] = mapped_column(Float)
+    temperature_avg: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    feels_like_min: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    feels_like_max: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
 
     # Погодні умови
-    weather_condition = Column(String(50), nullable=True)  # Clear, Rain, Snow, etc.
-    description = Column(String(200), nullable=True)  # Детальний опис
-    icon_code = Column(String(10), nullable=True)  # Код іконки від API
+    weather_condition: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    description: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
+    icon_code: Mapped[Optional[str]] = mapped_column(String(10), nullable=True)
 
     # Атмосферні умови
-    humidity = Column(Integer, nullable=True)  # Вологість %
-    pressure = Column(Integer, nullable=True)  # Тиск hPa
-    uv_index = Column(Float, nullable=True)  # УФ індекс
-    visibility = Column(Float, nullable=True)  # Видимість км
+    humidity: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    pressure: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    uv_index: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    visibility: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
 
     # Вітер
-    wind_speed = Column(Float, nullable=True)  # Швидкість м/с
-    wind_direction = Column(Integer, nullable=True)  # Напрямок градуси
-    wind_gust = Column(Float, nullable=True)  # Пориви м/с
+    wind_speed: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    wind_direction: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    wind_gust: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
 
     # Опади
-    precipitation_probability = Column(Integer, nullable=True)  # Ймовірність опадів %
-    precipitation_amount = Column(Float, nullable=True)  # Кількість опадів мм
+    precipitation_probability: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    precipitation_amount: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
 
     # Сонце
-    sunrise_time = Column(DateTime(timezone=True), nullable=True)
-    sunset_time = Column(DateTime(timezone=True), nullable=True)
-    daylight_hours = Column(Float, nullable=True)
+    sunrise_time: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    sunset_time: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    daylight_hours: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
 
     # Звʼязки
-    forecast_request = relationship("ForecastRequest", backref="daily_forecasts")
+    forecast_request: Mapped["ForecastRequest"] = relationship(backref="daily_forecasts")
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<DailyForecast(date={self.forecast_date}, temp={self.temperature_min}-{self.temperature_max}°C)>"
 
     def to_dict(self) -> dict:
@@ -146,35 +148,35 @@ class DailyForecast(Base):
             "temperature": {
                 "min": self.temperature_min,
                 "max": self.temperature_max,
-                "avg": self.temperature_avg
+                "avg": self.temperature_avg,
             },
             "feels_like": {
                 "min": self.feels_like_min,
-                "max": self.feels_like_max
+                "max": self.feels_like_max,
             },
             "weather": {
                 "condition": self.weather_condition,
                 "description": self.description,
-                "icon": self.icon_code
+                "icon": self.icon_code,
             },
             "atmosphere": {
                 "humidity": self.humidity,
                 "pressure": self.pressure,
                 "uv_index": self.uv_index,
-                "visibility": self.visibility
+                "visibility": self.visibility,
             },
             "wind": {
                 "speed": self.wind_speed,
                 "direction": self.wind_direction,
-                "gust": self.wind_gust
+                "gust": self.wind_gust,
             },
             "precipitation": {
                 "probability": self.precipitation_probability,
-                "amount": self.precipitation_amount
+                "amount": self.precipitation_amount,
             },
             "sun": {
                 "sunrise": self.sunrise_time.isoformat() if self.sunrise_time else None,
                 "sunset": self.sunset_time.isoformat() if self.sunset_time else None,
-                "daylight_hours": self.daylight_hours
-            }
+                "daylight_hours": self.daylight_hours,
+            },
         }

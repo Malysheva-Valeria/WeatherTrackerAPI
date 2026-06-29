@@ -1,12 +1,18 @@
 """
 WeatherRequest model для збереження історії погодних запитів
 """
+from datetime import datetime
+from decimal import Decimal
+from typing import TYPE_CHECKING, Any, Optional
 
-from sqlalchemy import JSON, Boolean, Column, DateTime, ForeignKey, Integer, Numeric, String
-from sqlalchemy.orm import relationship
+from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, Integer, Numeric, String
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 
 from app.api.models.base import Base
+
+if TYPE_CHECKING:
+    from app.api.models.user import User
 
 
 class WeatherRequest(Base):
@@ -15,35 +21,35 @@ class WeatherRequest(Base):
     __tablename__ = "weather_requests"
 
     # Основні поля
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
 
     # Дані про місто
-    city = Column(String(100), nullable=False, index=True)
-    country = Column(String(10), nullable=True)
+    city: Mapped[str] = mapped_column(String(100), index=True)
+    country: Mapped[Optional[str]] = mapped_column(String(10), nullable=True)
 
     # Погодні дані
-    temperature = Column(Numeric(5, 2), nullable=True)  # -99.99 до 99.99
-    feels_like = Column(Numeric(5, 2), nullable=True)
-    description = Column(String(200), nullable=True)
-    weather_condition = Column(String(50), nullable=True)  # Clear, Clouds, Rain тощо
+    temperature: Mapped[Optional[Decimal]] = mapped_column(Numeric(5, 2), nullable=True)  # -99.99 до 99.99
+    feels_like: Mapped[Optional[Decimal]] = mapped_column(Numeric(5, 2), nullable=True)
+    description: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
+    weather_condition: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)  # Clear, Clouds, Rain тощо
 
     # Додаткові дані
-    humidity = Column(Integer, nullable=True)  # %
-    pressure = Column(Integer, nullable=True)  # hPa
-    wind_speed = Column(Numeric(5, 2), nullable=True)  # м/с
-    wind_direction = Column(Integer, nullable=True)  # градуси
+    humidity: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)  # %
+    pressure: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)  # hPa
+    wind_speed: Mapped[Optional[Decimal]] = mapped_column(Numeric(5, 2), nullable=True)  # м/с
+    wind_direction: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)  # градуси
 
     # Метадані
-    request_time = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-    response_data = Column(JSON, nullable=True)  # Повні дані з API
-    is_cached = Column(Boolean, default=False, nullable=False)  # Чи був запит з кешу
-    is_mock = Column(Boolean, default=False, nullable=False)  # Чи використовувались mock дані
+    request_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    response_data: Mapped[Optional[Any]] = mapped_column(JSON, nullable=True)  # Повні дані з API
+    is_cached: Mapped[bool] = mapped_column(Boolean, default=False)  # Чи був запит з кешу
+    is_mock: Mapped[bool] = mapped_column(Boolean, default=False)  # Чи використовувались mock дані
 
     # Зв'язки
-    user = relationship("User", back_populates="weather_requests")
+    user: Mapped["User"] = relationship(back_populates="weather_requests")
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<WeatherRequest(id={self.id}, user_id={self.user_id}, city='{self.city}', temp={self.temperature})>"
 
     def to_dict(self) -> dict:
@@ -53,15 +59,15 @@ class WeatherRequest(Base):
             "user_id": self.user_id,
             "city": self.city,
             "country": self.country,
-            "temperature": float(self.temperature) if self.temperature else None,
-            "feels_like": float(self.feels_like) if self.feels_like else None,
+            "temperature": float(self.temperature) if self.temperature is not None else None,
+            "feels_like": float(self.feels_like) if self.feels_like is not None else None,
             "description": self.description,
             "weather_condition": self.weather_condition,
             "humidity": self.humidity,
             "pressure": self.pressure,
-            "wind_speed": float(self.wind_speed) if self.wind_speed else None,
+            "wind_speed": float(self.wind_speed) if self.wind_speed is not None else None,
             "wind_direction": self.wind_direction,
             "request_time": self.request_time.isoformat() if self.request_time else None,
             "is_cached": self.is_cached,
-            "is_mock": self.is_mock
+            "is_mock": self.is_mock,
         }
