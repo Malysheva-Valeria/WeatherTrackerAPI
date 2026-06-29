@@ -97,7 +97,7 @@ async def get_weather_history(
         current_user.id, page=page, size=size, city=city
     )
 
-    history_items = [WeatherHistoryItem.from_orm(item) for item in items]
+    history_items = [WeatherHistoryItem.model_validate(item) for item in items]
 
     return WeatherHistoryResponse(
         items=history_items,

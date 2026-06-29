@@ -5,7 +5,7 @@ Pydantic схеми для прогнозів погоди
 from datetime import date, datetime
 from typing import List, Optional
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from app.api.schemas.base import TimestampSchema
 
@@ -82,36 +82,27 @@ class ForecastRequestSchema(BaseModel):
     longitude: Optional[float] = Field(None, ge=-180, le=180, description="Довгота")
     days: int = Field(5, ge=1, le=7, description="Кількість днів прогнозу (1-7)")
 
-    @validator('city')
-    def validate_location_provided(cls, v, values):
+    @model_validator(mode="after")
+    def validate_location_provided(self):
         """Перевірка що вказано або місто, або координати"""
-        lat = values.get('latitude')
-        lon = values.get('longitude')
-
-        # Якщо є місто - ОК
-        if v and v.strip():
-            return v.strip()
+        if self.city and self.city.strip():
+            self.city = self.city.strip()
+            return self
 
         # Якщо немає міста, мають бути координати
-        if lat is None or lon is None:
+        if self.latitude is None or self.longitude is None:
             raise ValueError('Вкажіть або назву міста, або координати (latitude + longitude)')
 
-        return v
+        return self
 
-    class Config:
-        schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "examples": [
-                {
-                    "city": "Kyiv",
-                    "days": 5
-                },
-                {
-                    "latitude": 50.4501,
-                    "longitude": 30.5234,
-                    "days": 3
-                }
+                {"city": "Kyiv", "days": 5},
+                {"latitude": 50.4501, "longitude": 30.5234, "days": 3},
             ]
         }
+    )
 
 
 class ForecastSummary(BaseModel):
@@ -191,8 +182,7 @@ class ForecastHistoryItem(TimestampSchema):
     is_cached: bool = Field(..., description="Чи був закешований")
     is_mock: bool = Field(..., description="Чи це mock дані")
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ForecastHistoryResponse(BaseModel):
@@ -202,14 +192,13 @@ class ForecastHistoryResponse(BaseModel):
     total: int = Field(..., description="Загальна кількість записів")
     page: int = Field(..., description="Поточна сторінка")
     size: int = Field(..., description="Розмір сторінки")
-    pages: int = Field(..., description="Загальна кількість сторінок")
+    pages: int = Field(0, description="Загальна кількість сторінок")
 
-    @validator('pages', always=True)
-    def calculate_pages(cls, v, values):
+    @model_validator(mode="after")
+    def calculate_pages(self):
         """Розрахувати кількість сторінок"""
-        total = values.get('total', 0)
-        size = values.get('size', 10)
-        return max(1, (total + size - 1) // size)
+        self.pages = max(1, (self.total + self.size - 1) // self.size)
+        return self
 
 
 class PopularCityData(BaseModel):

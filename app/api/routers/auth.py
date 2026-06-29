@@ -88,7 +88,7 @@ async def register(
 
     return RegisterResponse(
         message="Користувач успішно зареєстрований",
-        user=UserResponse.from_orm(new_user),
+        user=UserResponse.model_validate(new_user),
         access_token=tokens["access_token"],
         token_type=tokens["token_type"],
         expires_in=tokens["expires_in"]
@@ -136,7 +136,7 @@ async def login(
         access_token=tokens["access_token"],
         token_type=tokens["token_type"],
         expires_in=tokens["expires_in"],
-        user=UserResponse.from_orm(user)
+        user=UserResponse.model_validate(user)
     )
 
 
@@ -193,4 +193,4 @@ async def get_current_user_info(
     Returns:
         UserResponse: Інформація про користувача
     """
-    return UserResponse.from_orm(current_user)
+    return UserResponse.model_validate(current_user)

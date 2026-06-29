@@ -33,7 +33,7 @@ async def get_my_profile(
     Returns:
         UserResponse: Повна інформація про користувача
     """
-    return UserResponse.from_orm(current_user)
+    return UserResponse.model_validate(current_user)
 
 
 @router.put("/me", response_model=UserResponse)
@@ -96,7 +96,7 @@ async def update_my_profile(
     db.commit()
     db.refresh(current_user)
 
-    return UserResponse.from_orm(current_user)
+    return UserResponse.model_validate(current_user)
 
 
 @router.put("/me/password", response_model=MessageResponse)
@@ -200,4 +200,4 @@ async def get_user_by_id(
             detail="Користувача не знайдено"
         )
 
-    return UserResponse.from_orm(user)
+    return UserResponse.model_validate(user)

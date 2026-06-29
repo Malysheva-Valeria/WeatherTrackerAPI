@@ -4,7 +4,7 @@
 from typing import List, Optional, Union
 
 from pydantic import field_validator, model_validator
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # Значення-плейсхолдери, які заборонено використовувати в продакшені
 INSECURE_SECRETS = {
@@ -79,10 +79,11 @@ class Settings(BaseSettings):
                 raise ValueError("CORS '*' заборонено у production — вкажіть конкретні домени.")
         return self
 
-    class Config:
-        """Конфігурація для читання з .env файлу"""
-        env_file = ".env"
-        env_file_encoding = "utf-8"
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
 
 
 # Створення екземпляра налаштувань
