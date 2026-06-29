@@ -7,11 +7,13 @@ import logging
 import uvicorn
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.api.core.events import lifespan
 from app.api.core.exceptions import register_exception_handlers
+from app.api.core.metrics import MetricsMiddleware, render_metrics
 from app.api.core.middleware import RequestContextMiddleware
 from app.api.core.security import SecurityHeadersMiddleware
 from app.api.routers import analytics
@@ -45,6 +47,7 @@ register_exception_handlers(app)
 # Middleware (порядок: останній доданий — найбільш зовнішній).
 # RequestContext має бути зовнішнім, щоб request_id існував для всіх інших.
 app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(MetricsMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.BACKEND_CORS_ORIGINS,
@@ -83,22 +86,45 @@ async def root():
     }
 
 
-@app.get("/health", tags=["Health"])
-async def health_check(db: Session = Depends(get_db)):
-    """Перевірка стану сервісу та підключення до БД."""
-    database_ok = True
+def _check_database(db: Session) -> bool:
     try:
         db.execute(text("SELECT 1"))
+        return True
     except Exception:
         logger.exception("Health check: помилка підключення до БД")
-        database_ok = False
+        return False
 
+
+@app.get("/health", tags=["Health"])
+async def health_check(db: Session = Depends(get_db)):
+    """Загальний стан сервісу та підключення до БД."""
+    database_ok = _check_database(db)
     return {
         "status": "healthy" if database_ok else "degraded",
         "service": "WeatherTracker API",
         "version": "1.0.0",
         "database": "connected" if database_ok else "unavailable",
     }
+
+
+@app.get("/health/live", tags=["Health"])
+async def liveness():
+    """Liveness probe: процес живий (не залежить від зовнішніх сервісів)."""
+    return {"status": "alive"}
+
+
+@app.get("/health/ready", tags=["Health"])
+async def readiness(db: Session = Depends(get_db)):
+    """Readiness probe: готовність приймати трафік (перевіряє БД)."""
+    if not _check_database(db):
+        return JSONResponse(status_code=503, content={"status": "not_ready", "database": "unavailable"})
+    return {"status": "ready", "database": "connected"}
+
+
+@app.get("/metrics", tags=["Monitoring"], include_in_schema=False)
+async def metrics():
+    """Метрики у форматі Prometheus."""
+    return render_metrics()
 
 
 if __name__ == "__main__":
