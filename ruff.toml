@@ -1,0 +1,11 @@
+# Конфігурація лінтера Ruff
+line-length = 120
+target-version = "py311"
+
+[lint]
+# E/W — pycodestyle, F — pyflakes, I — isort
+select = ["E", "W", "F", "I"]
+
+[lint.per-file-ignores]
+# У тестах припустимі довгі рядки та невикористані локальні змінні в прикладах
+"tests/**" = ["E501"]

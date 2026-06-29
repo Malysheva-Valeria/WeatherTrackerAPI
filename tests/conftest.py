@@ -1,41 +1,42 @@
-"""Глобальні фікстури для тестів"""
+"""Глобальні фікстури для тестів.
+
+Кожен тест отримує ІЗОЛЬОВАНУ in-memory SQLite-базу: таблиці створюються
+перед тестом і видаляються після. Завдяки StaticPool усі зʼєднання в межах
+одного тесту бачать ту саму базу, тож дані зберігаються між запитами в межах
+тесту, але не протікають між тестами.
+"""
 import pytest
-from unittest.mock import Mock
+from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from fastapi.testclient import TestClient
+from sqlalchemy.pool import StaticPool
 
-from app.main import app
 from app.database import Base, get_db
-from app.api.models.user import User
-
-# Тестова база даних в пам'яті
-SQLALCHEMY_DATABASE_URL = "sqlite:///./test.db"
-engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
-TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-
-@pytest.fixture(scope="session")
-def test_db():
-    """Створення тестової бази даних"""
-    Base.metadata.create_all(bind=engine)
-    yield
-    Base.metadata.drop_all(bind=engine)
+from app.main import app
 
 
 @pytest.fixture
-def db_session(test_db):
-    """Сесія бази даних для тестів"""
+def db_session():
+    """Свіжа in-memory база для кожного тесту."""
+    engine = create_engine(
+        "sqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    Base.metadata.create_all(bind=engine)
+    TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     session = TestingSessionLocal()
     try:
         yield session
     finally:
         session.close()
+        Base.metadata.drop_all(bind=engine)
+        engine.dispose()
 
 
 @pytest.fixture
 def client(db_session):
-    """TestClient для API тестів"""
+    """TestClient з підміненою залежністю get_db на тестову сесію."""
 
     def override_get_db():
         try:
@@ -50,25 +51,22 @@ def client(db_session):
 
 @pytest.fixture
 def sample_user_data():
-    """Зразок даних користувача"""
+    """Зразок даних користувача."""
     return {
         "username": "testuser",
         "email": "test@example.com",
-        "password": "testpass123"
+        "password": "testpass123",
     }
 
 
 @pytest.fixture
 def auth_headers(client, sample_user_data):
-    """Заголовки авторизації для тестів"""
-    # Реєстрація користувача
+    """Заголовки авторизації: реєструє користувача та логіниться."""
     client.post("/auth/register", json=sample_user_data)
 
-    # Логін для отримання токена
     response = client.post("/auth/login", data={
         "username": sample_user_data["username"],
-        "password": sample_user_data["password"]
+        "password": sample_user_data["password"],
     })
     token = response.json()["access_token"]
-
     return {"Authorization": f"Bearer {token}"}

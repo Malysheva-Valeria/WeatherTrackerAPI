@@ -1,7 +1,5 @@
 """Unit тести для HistoryService"""
 import pytest
-from unittest.mock import Mock, patch
-from datetime import datetime
 
 # from app.api.services.history_service import HistoryService
 

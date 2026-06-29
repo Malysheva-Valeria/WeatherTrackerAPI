@@ -1,13 +1,14 @@
 """
 Unit тести для dependencies з мокуванням
 """
-import pytest
 from unittest.mock import Mock, patch
+
+import pytest
 from fastapi import HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials
 
-from app.dependencies import get_current_user
 from app.api.models.user import User
+from app.dependencies import get_current_user
 
 
 class TestDependencies:
@@ -94,7 +95,7 @@ class TestDependencies:
 
         # Assert - користувач отримується, але він неактивний
         assert result == mock_user
-        assert result.is_active == False
+        assert result.is_active is False
 
         # Тепер тестування get_current_active_user окремо
         from app.dependencies import get_current_active_user
@@ -210,13 +211,13 @@ class TestDependencies:
 def test_dependencies_import():
     """Тест імпортів dependencies"""
     from app.dependencies import (
-        get_current_user,
+        get_auth_service,
         get_current_active_user,
-        get_current_verified_user,
         get_current_superuser,
+        get_current_user,
         get_current_user_optional,
+        get_current_verified_user,
         get_db,
-        get_auth_service
     )
 
     assert callable(get_current_user)

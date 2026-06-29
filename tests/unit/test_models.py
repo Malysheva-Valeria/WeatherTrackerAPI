@@ -1,10 +1,6 @@
 """
 Unit тести для Models
 """
-import pytest
-from datetime import datetime, timedelta
-from sqlalchemy.exc import IntegrityError
-from unittest.mock import Mock
 
 from app.api.models.user import User
 from app.api.models.weather_request import WeatherRequest
@@ -46,7 +42,7 @@ class TestUserModel:
         assert user.username == "john_doe"
         assert user.first_name == "John"
         assert user.last_name == "Doe"
-        assert user.is_verified == True
+        assert user.is_verified is True
 
         print("User модель підтримує опціональні поля")
 

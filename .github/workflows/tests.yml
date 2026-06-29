@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master, develop]
+  pull_request:
+    branches: [main, master, develop]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+
+      - name: Lint (ruff)
+        run: ruff check app tests
+
+      - name: Type check (mypy)
+        run: mypy app --ignore-missing-imports
+        # Типізація поки не повна — крок інформативний, не блокує збірку.
+        continue-on-error: true
+
+      - name: Tests (pytest + coverage gate)
+        env:
+          # Тести працюють у mock-режимі; секрети не потрібні, але задаємо
+          # явні значення, щоб конфіг точно ініціалізувався.
+          SECRET_KEY: test-secret-key-for-ci
+          ENVIRONMENT: development
+        run: pytest

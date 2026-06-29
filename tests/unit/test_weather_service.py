@@ -1,11 +1,9 @@
 """
 Unit тести для методів WeatherService
 """
+from unittest.mock import Mock, patch
+
 import pytest
-from unittest.mock import Mock, patch, AsyncMock
-from datetime import datetime
-import json
-import httpx
 
 
 class TestWeatherServiceCorrect:
@@ -164,6 +162,9 @@ class TestWeatherServiceCorrect:
     async def test_get_current_weather_by_coordinates_success(self, mock_get, weather_service, mock_db,
                                                               mock_openweather_current_response):
         """Тест успішного отримання погоди за координатами"""
+        # Має бути заданий API ключ, інакше сервіс одразу повертає mock без виклику API
+        weather_service.api_key = "test-api-key"
+
         # Налаштування мока
         mock_response = Mock()
         mock_response.status_code = 200
