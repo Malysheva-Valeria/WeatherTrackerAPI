@@ -30,8 +30,14 @@ class RegisterRequest(BaseSchema):
 class Token(BaseSchema):
     """Схема для JWT токену"""
     access_token: str
+    refresh_token: str = Field(..., description="Refresh-токен для оновлення доступу")
     token_type: str = "bearer"
-    expires_in: int = Field(..., description="Час життя токену в секундах")
+    expires_in: int = Field(..., description="Час життя access-токену в секундах")
+
+
+class RefreshRequest(BaseSchema):
+    """Схема запиту на оновлення токена"""
+    refresh_token: str = Field(..., description="Дійсний refresh-токен")
 
 
 class LoginResponse(Token):

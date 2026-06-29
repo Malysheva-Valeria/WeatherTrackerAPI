@@ -3,6 +3,7 @@
 """
 from app.api.models.base import Base
 from app.api.models.forecast_request import DailyForecast, ForecastRequest
+from app.api.models.refresh_token import RefreshToken
 from app.api.models.user import User
 from app.api.models.weather_request import WeatherRequest
 
@@ -12,5 +13,6 @@ __all__ = [
     "User",
     "WeatherRequest",
     "ForecastRequest",
-    "DailyForecast"
+    "DailyForecast",
+    "RefreshToken",
 ]

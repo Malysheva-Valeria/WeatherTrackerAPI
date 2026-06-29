@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 
 from app.api.core.rate_limiter import rate_limit
 from app.api.models.user import User
-from app.api.schemas.auth import LoginResponse, RegisterRequest, RegisterResponse, Token
+from app.api.schemas.auth import LoginResponse, RefreshRequest, RegisterRequest, RegisterResponse, Token
 from app.api.schemas.user import UserResponse
 from app.api.services.auth_service import get_auth_service
 from app.config import settings
@@ -93,13 +93,14 @@ async def register(
     db.commit()
     db.refresh(new_user)
 
-    # Створення токенів для нового користувача
-    tokens = auth_service.create_user_tokens(new_user)
+    # Створення токенів для нового користувача (access + refresh)
+    tokens = auth_service.issue_tokens(db, new_user)
 
     return RegisterResponse(
         message="Користувач успішно зареєстрований",
         user=UserResponse.model_validate(new_user),
         access_token=tokens["access_token"],
+        refresh_token=tokens["refresh_token"],
         token_type=tokens["token_type"],
         expires_in=tokens["expires_in"]
     )
@@ -138,12 +139,13 @@ async def login(
     # Оновлення інформації про логін
     auth_service.update_user_login_info(db, user)
 
-    # Створення токенів
-    tokens = auth_service.create_user_tokens(user)
+    # Створення токенів (access + refresh)
+    tokens = auth_service.issue_tokens(db, user)
 
     return LoginResponse(
         message="Успішний вхід в систему",
         access_token=tokens["access_token"],
+        refresh_token=tokens["refresh_token"],
         token_type=tokens["token_type"],
         expires_in=tokens["expires_in"],
         user=UserResponse.model_validate(user)
@@ -152,40 +154,48 @@ async def login(
 
 @router.post("/refresh", response_model=Token)
 async def refresh_token(
-        current_user: User = Depends(get_current_user),
+        body: RefreshRequest,
         db: Session = Depends(get_db)
 ):
     """
-    Оновлення access токену
+    Оновлення токенів за refresh-токеном (з ротацією).
 
-    Args:
-        db: Сесія бази даних
-        current_user: Поточний користувач з токену
+    Старий refresh-токен інвалідовується, видається нова пара access+refresh.
 
-    Returns:
-        Token: Новий access токен
+    Raises:
+        HTTPException: 401 якщо refresh-токен невалідний, відкликаний або протермінований
     """
     auth_service = get_auth_service()
-    tokens = auth_service.create_user_tokens(current_user)
+    tokens = auth_service.rotate_refresh_token(db, body.refresh_token)
+
+    if tokens is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Невалідний або протермінований refresh-токен",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
     return Token(
         access_token=tokens["access_token"],
+        refresh_token=tokens["refresh_token"],
         token_type=tokens["token_type"],
-        expires_in=tokens["expires_in"]
+        expires_in=tokens["expires_in"],
     )
 
 
 @router.post("/logout")
-async def logout():
+async def logout(
+        body: RefreshRequest,
+        db: Session = Depends(get_db)
+):
     """
-    Логаут користувача
-
-    Returns:
-        dict: Повідомлення про успішний логаут
+    Логаут: відкликає переданий refresh-токен (далі ним не можна оновитися).
     """
+    auth_service = get_auth_service()
+    revoked = auth_service.revoke_refresh_token(db, body.refresh_token)
     return {
         "message": "Успішний вихід з системи",
-        "detail": "Видаліть токен з клієнтського застосунку"
+        "revoked": revoked,
     }
 
 

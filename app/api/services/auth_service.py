@@ -8,6 +8,7 @@ JWT Authentication Service для WeatherTracker API
 - Валідації безпеки паролів
 """
 
+import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Optional, Tuple
 
@@ -15,6 +16,7 @@ from jose import JWTError, jwt
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 
+from app.api.models.refresh_token import RefreshToken
 from app.api.models.user import User
 from app.config import settings
 
@@ -209,6 +211,75 @@ class AuthService:
                 "is_verified": user.is_verified
             }
         }
+
+    def _create_refresh_token(self, db: Session, user: User) -> str:
+        """Створює refresh-токен (JWT з jti) і зберігає його запис у БД."""
+        jti = uuid.uuid4().hex
+        expires_at = datetime.now(timezone.utc) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
+        token = jwt.encode(
+            {
+                "sub": str(user.id),
+                "jti": jti,
+                "type": "refresh",
+                "exp": expires_at,
+                "iat": datetime.now(timezone.utc),
+            },
+            self.SECRET_KEY,
+            algorithm=self.ALGORITHM,
+        )
+        db.add(RefreshToken(jti=jti, user_id=user.id, expires_at=expires_at))
+        db.commit()
+        return token
+
+    def issue_tokens(self, db: Session, user: User) -> dict:
+        """Видає пару токенів (access + refresh)."""
+        tokens = self.create_user_tokens(user)
+        tokens["refresh_token"] = self._create_refresh_token(db, user)
+        return tokens
+
+    def _decode_refresh(self, token: str) -> Optional[dict]:
+        """Декодує refresh-токен і перевіряє його тип."""
+        payload = self.verify_token(token)
+        if not payload or payload.get("type") != "refresh":
+            return None
+        return payload
+
+    def _find_token_row(self, db: Session, payload: dict) -> Optional[RefreshToken]:
+        jti = payload.get("jti")
+        if not jti:
+            return None
+        return db.query(RefreshToken).filter(RefreshToken.jti == jti).first()
+
+    def rotate_refresh_token(self, db: Session, token: str) -> Optional[dict]:
+        """Перевіряє refresh-токен, відкликає його та видає нову пару (ротація)."""
+        payload = self._decode_refresh(token)
+        if not payload:
+            return None
+
+        row = self._find_token_row(db, payload)
+        if not row or not row.is_active:
+            return None
+
+        user = db.query(User).filter(User.id == row.user_id).first()
+        if not user or not user.is_active:
+            return None
+
+        # Ротація: старий токен інвалідовано, видаємо нову пару
+        row.revoked = True
+        db.commit()
+        return self.issue_tokens(db, user)
+
+    def revoke_refresh_token(self, db: Session, token: str) -> bool:
+        """Відкликає refresh-токен (logout). True, якщо запис знайдено й відкликано."""
+        payload = self._decode_refresh(token)
+        if not payload:
+            return False
+        row = self._find_token_row(db, payload)
+        if not row:
+            return False
+        row.revoked = True
+        db.commit()
+        return True
 
     def validate_password_strength(self, password: str) -> Tuple[bool, str]:
         """
