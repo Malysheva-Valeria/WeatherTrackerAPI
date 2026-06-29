@@ -1,6 +1,7 @@
 """
 Ініціалізація моделей WeatherTracker API
 """
+from app.api.models.audit import AuditLog
 from app.api.models.base import Base
 from app.api.models.forecast_request import DailyForecast, ForecastRequest
 from app.api.models.refresh_token import RefreshToken
@@ -15,4 +16,5 @@ __all__ = [
     "ForecastRequest",
     "DailyForecast",
     "RefreshToken",
+    "AuditLog",
 ]

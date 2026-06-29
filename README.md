@@ -16,7 +16,7 @@ WeatherTracker API дозволяє користувачам:
 - **Backend**: Python 3.11+, FastAPI
 - **База даних**: PostgreSQL, SQLAlchemy, Alembic
 - **Аутентифікація**: JWT (access + refresh-токени з ротацією та відкликанням)
-- **Захист**: rate limiting на ендпоінтах входу/реєстрації (Redis + fallback)
+- **Захист**: rate limiting на auth-ендпоінтах (Redis + fallback), audit log подій безпеки
 - **Зовнішнє API**: OpenWeatherMap
 - **Тестування**: pytest (+ покриття), TestClient
 - **Якість коду**: ruff, mypy (CI)
@@ -120,6 +120,7 @@ docker compose -f docker/docker-compose.yml up -d --build
 
 #### Користувачі
 - `GET /users/me` - Отримання профілю поточного користувача
+- `GET /users/me/audit` - Журнал аудиту (події безпеки користувача)
 
 #### Погода
 - `GET /weather/current?city=Kyiv` - Поточна погода для міста

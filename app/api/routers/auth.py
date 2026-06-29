@@ -8,11 +8,12 @@ Authentication Router для WeatherTracker API
 - Логауту
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
 from app.api.core.rate_limiter import rate_limit
+from app.api.models.audit import AuditAction
 from app.api.models.user import User
 from app.api.schemas.auth import (
     LoginResponse,
@@ -24,6 +25,7 @@ from app.api.schemas.auth import (
 )
 from app.api.schemas.base import MessageResponse
 from app.api.schemas.user import UserResponse
+from app.api.services.audit_service import AuditService, client_ip
 from app.api.services.auth_service import get_auth_service
 from app.api.services.email_service import get_email_service
 from app.config import settings
@@ -43,6 +45,7 @@ _auth_rate_limit = rate_limit(settings.RATE_LIMIT_AUTH_MAX, settings.RATE_LIMIT_
 )
 async def register(
         user_data: RegisterRequest,
+        request: Request,
         db: Session = Depends(get_db)
 ):
     """
@@ -106,6 +109,10 @@ async def register(
     verification_token = auth_service.create_email_verification_token(new_user)
     get_email_service().send_verification_email(new_user.email, verification_token)
 
+    AuditService(db).record(
+        AuditAction.REGISTER, user_id=new_user.id, ip_address=client_ip(request)
+    )
+
     # Створення токенів для нового користувача (access + refresh)
     tokens = auth_service.issue_tokens(db, new_user)
 
@@ -121,6 +128,7 @@ async def register(
 
 @router.post("/login", response_model=LoginResponse, dependencies=[_auth_rate_limit])
 async def login(
+        request: Request,
         form_data: OAuth2PasswordRequestForm = Depends(),
         db: Session = Depends(get_db)
 ):
@@ -138,16 +146,21 @@ async def login(
         HTTPException: 401 якщо credentials невалідні
     """
     auth_service = get_auth_service()
+    audit = AuditService(db)
+    ip = client_ip(request)
 
     # Аутентифікація користувача
     user = auth_service.authenticate_user(db, form_data.username, form_data.password)
 
     if not user:
+        audit.record(AuditAction.LOGIN_FAILED, ip_address=ip, detail=f"username={form_data.username}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Невірний username/email або пароль",
             headers={"WWW-Authenticate": "Bearer"},
         )
+
+    audit.record(AuditAction.LOGIN_SUCCESS, user_id=user.id, ip_address=ip)
 
     # Оновлення інформації про логін
     auth_service.update_user_login_info(db, user)
@@ -215,6 +228,7 @@ async def logout(
 @router.post("/verify-email", response_model=MessageResponse)
 async def verify_email(
         body: VerifyEmailRequest,
+        request: Request,
         db: Session = Depends(get_db)
 ):
     """
@@ -230,6 +244,9 @@ async def verify_email(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Невалідний або протермінований токен підтвердження",
         )
+    AuditService(db).record(
+        AuditAction.EMAIL_VERIFIED, user_id=user.id, ip_address=client_ip(request)
+    )
     return MessageResponse(message="Email успішно підтверджено")
 
 

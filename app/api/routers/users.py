@@ -8,12 +8,17 @@ Users Router для WeatherTracker API
 - Видалення акаунту
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from typing import List
+
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
+from app.api.models.audit import AuditAction
 from app.api.models.user import User
+from app.api.schemas.audit import AuditLogResponse
 from app.api.schemas.base import MessageResponse
 from app.api.schemas.user import PasswordChangeRequest, UserResponse, UserUpdate
+from app.api.services.audit_service import AuditService, client_ip
 from app.api.services.auth_service import get_auth_service
 from app.dependencies import get_current_active_user, get_db
 
@@ -102,6 +107,7 @@ async def update_my_profile(
 @router.put("/me/password", response_model=MessageResponse)
 async def change_password(
         password_data: PasswordChangeRequest,
+        request: Request,
         current_user: User = Depends(get_current_active_user),
         db: Session = Depends(get_db)
 ):
@@ -147,11 +153,16 @@ async def change_password(
     current_user.hashed_password = auth_service.get_password_hash(password_data.new_password)
     db.commit()
 
+    AuditService(db).record(
+        AuditAction.PASSWORD_CHANGED, user_id=current_user.id, ip_address=client_ip(request)
+    )
+
     return MessageResponse(message="Пароль успішно змінено")
 
 
 @router.delete("/me", response_model=MessageResponse)
 async def delete_my_account(
+        request: Request,
         current_user: User = Depends(get_current_active_user),
         db: Session = Depends(get_db)
 ):
@@ -165,11 +176,36 @@ async def delete_my_account(
     Returns:
         MessageResponse: Повідомлення про видалення акаунту
     """
+    user_id = current_user.id
     # Замість фізичного видалення - деактивація користувача
     current_user.is_active = False
     db.commit()
 
+    AuditService(db).record(
+        AuditAction.ACCOUNT_DEACTIVATED, user_id=user_id, ip_address=client_ip(request)
+    )
+
     return MessageResponse(message="Акаунт успішно деактивовано")
+
+
+@router.get("/me/audit", response_model=List[AuditLogResponse])
+async def get_my_audit_log(
+        limit: int = 50,
+        current_user: User = Depends(get_current_active_user),
+        db: Session = Depends(get_db)
+):
+    """
+    Журнал аудиту поточного користувача (останні події безпеки).
+
+    Args:
+        limit: Максимальна кількість записів (за замовчуванням 50)
+
+    Returns:
+        List[AuditLogResponse]: Події у зворотному хронологічному порядку
+    """
+    limit = max(1, min(limit, 200))
+    entries = AuditService(db).list_for_user(current_user.id, limit=limit)
+    return [AuditLogResponse.model_validate(e) for e in entries]
 
 
 @router.get("/{user_id}", response_model=UserResponse)
