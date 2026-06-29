@@ -15,6 +15,7 @@ from app.api.routers import analytics
 
 # Імпорт роутерів
 from app.api.routers.auth import router as auth_router
+from app.api.routers.favorites import router as favorites_router
 from app.api.routers.users import router as users_router
 from app.api.routers.weather import router as weather_router
 
@@ -59,6 +60,7 @@ app.add_middleware(
 app.include_router(auth_router)
 app.include_router(users_router)
 app.include_router(weather_router)
+app.include_router(favorites_router)
 
 app.include_router(analytics.router, prefix="/api/v1")
 

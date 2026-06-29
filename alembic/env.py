@@ -20,6 +20,7 @@ from app.api.models.weather_request import WeatherRequest  # noqa: F401
 from app.api.models.forecast_request import ForecastRequest, DailyForecast  # noqa: F401
 from app.api.models.refresh_token import RefreshToken  # noqa: F401
 from app.api.models.audit import AuditLog  # noqa: F401
+from app.api.models.favorite_city import FavoriteCity  # noqa: F401
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

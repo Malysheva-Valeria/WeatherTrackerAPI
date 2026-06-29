@@ -3,6 +3,7 @@
 """
 from app.api.models.audit import AuditLog
 from app.api.models.base import Base
+from app.api.models.favorite_city import FavoriteCity
 from app.api.models.forecast_request import DailyForecast, ForecastRequest
 from app.api.models.refresh_token import RefreshToken
 from app.api.models.user import User
@@ -17,4 +18,5 @@ __all__ = [
     "DailyForecast",
     "RefreshToken",
     "AuditLog",
+    "FavoriteCity",
 ]

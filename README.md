@@ -130,6 +130,12 @@ docker compose -f docker/docker-compose.yml up -d --build
 - `DELETE /weather/history/{id}` - Видалення запису з історії
 - `GET /weather/stats` - Статистика запитів
 
+#### Улюблені міста
+- `POST /favorites` - Додати місто в обране
+- `GET /favorites` - Список улюблених міст
+- `DELETE /favorites/{id}` - Прибрати з обраного
+- `GET /favorites/weather` - Поточна погода по всіх улюблених містах
+
 #### Аналітика
 - `GET /api/v1/analytics/summary` - Зведена аналітика
 - `GET /api/v1/analytics/cities/popular` - Популярні міста
