@@ -29,9 +29,8 @@ jobs:
         run: ruff check app tests
 
       - name: Type check (mypy)
-        run: mypy app --ignore-missing-imports
-        # Типізація поки не повна — крок інформативний, не блокує збірку.
-        continue-on-error: true
+        # Перевіряє типізовані модулі суворо; легасі/ORM-важкі виключені в mypy.ini
+        run: mypy app
 
       - name: Tests (pytest + coverage gate)
         env:
