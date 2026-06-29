@@ -3,7 +3,6 @@ WeatherTracker API - Основний файл додатку з JWT аутен�
 """
 
 import logging
-from contextlib import asynccontextmanager
 
 import uvicorn
 from fastapi import Depends, FastAPI
@@ -11,6 +10,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
+from app.api.core.events import lifespan
+from app.api.core.exceptions import register_exception_handlers
+from app.api.core.middleware import RequestContextMiddleware
+from app.api.core.security import SecurityHeadersMiddleware
 from app.api.routers import analytics
 
 # Імпорт роутерів
@@ -26,17 +29,6 @@ from app.database import get_db
 logger = logging.getLogger(__name__)
 
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    """Події життєвого циклу застосунку (заміна застарілих on_event)."""
-    logger.info("WeatherTracker API запущено (Swagger UI: /docs)")
-    yield
-    # Коректно закриваємо зʼєднання з Redis (якщо було відкрите)
-    from app.api.utils.redis_client import close_redis_client
-    await close_redis_client()
-    logger.info("WeatherTracker API зупинено")
-
-
 # Створення FastAPI додатку
 app = FastAPI(
     title="WeatherTracker API",
@@ -47,7 +39,12 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS middleware: список дозволених origin'ів береться з конфігурації
+# Централізована обробка помилок (єдиний формат + request_id)
+register_exception_handlers(app)
+
+# Middleware (порядок: останній доданий — найбільш зовнішній).
+# RequestContext має бути зовнішнім, щоб request_id існував для всіх інших.
+app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.BACKEND_CORS_ORIGINS,
@@ -55,6 +52,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.add_middleware(RequestContextMiddleware)
 
 # Підключення роутерів
 app.include_router(auth_router)

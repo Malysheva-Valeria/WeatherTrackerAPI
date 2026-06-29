@@ -16,7 +16,8 @@ WeatherTracker API дозволяє користувачам:
 - **Backend**: Python 3.11+, FastAPI
 - **База даних**: PostgreSQL, SQLAlchemy, Alembic
 - **Аутентифікація**: JWT (access + refresh-токени з ротацією та відкликанням)
-- **Захист**: rate limiting на auth-ендпоінтах (Redis + fallback), audit log подій безпеки
+- **Захист**: rate limiting на auth-ендпоінтах (Redis + fallback), audit log подій безпеки, security-заголовки
+- **Observability**: request-id трасування, структуроване логування, єдиний формат помилок
 - **Зовнішнє API**: OpenWeatherMap
 - **Тестування**: pytest (+ покриття), TestClient
 - **Якість коду**: ruff, mypy (CI)
