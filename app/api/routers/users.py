@@ -83,7 +83,7 @@ async def update_my_profile(
             )
 
     # Оновлення поля користувача
-    update_data = user_update.dict(exclude_unset=True)
+    update_data = user_update.model_dump(exclude_unset=True)
 
     for field, value in update_data.items():
         if hasattr(current_user, field):
