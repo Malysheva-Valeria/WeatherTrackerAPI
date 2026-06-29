@@ -29,6 +29,9 @@ async def lifespan(app: FastAPI):
     """Події життєвого циклу застосунку (заміна застарілих on_event)."""
     logger.info("WeatherTracker API запущено (Swagger UI: /docs)")
     yield
+    # Коректно закриваємо зʼєднання з Redis (якщо було відкрите)
+    from app.api.utils.redis_client import close_redis_client
+    await close_redis_client()
     logger.info("WeatherTracker API зупинено")
 
 

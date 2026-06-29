@@ -98,6 +98,15 @@ def test_current_weather_returns_mock_data(client, auth_headers):
     assert isinstance(body["cached"], bool)
 
 
+def test_current_weather_uses_cache_on_second_call(client, auth_headers):
+    first = client.get("/weather/current", params={"city": "Dnipro"}, headers=auth_headers)
+    second = client.get("/weather/current", params={"city": "Dnipro"}, headers=auth_headers)
+    assert first.status_code == 200 and second.status_code == 200
+    assert first.json()["cached"] is False
+    # друга відповідь береться з кешу
+    assert second.json()["cached"] is True
+
+
 def test_weather_history_records_request(client, auth_headers):
     client.get("/weather/current", params={"city": "Lviv"}, headers=auth_headers)
     client.get("/weather/current", params={"city": "Odesa"}, headers=auth_headers)

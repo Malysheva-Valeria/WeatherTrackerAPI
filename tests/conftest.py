@@ -15,6 +15,16 @@ from app.database import Base, get_db
 from app.main import app
 
 
+@pytest.fixture(autouse=True)
+def _isolated_cache():
+    """Тести працюють без Redis: примусово in-memory кеш, очищений між тестами."""
+    from app.api.services.cache_service import cache_service
+    cache_service._memory.clear()
+    cache_service._redis_enabled = False
+    yield
+    cache_service._memory.clear()
+
+
 @pytest.fixture
 def db_session():
     """Свіжа in-memory база для кожного тесту."""
