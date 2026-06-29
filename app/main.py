@@ -6,9 +6,10 @@ import logging
 from contextlib import asynccontextmanager
 
 import uvicorn
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
+from sqlalchemy.orm import Session
 
 from app.api.routers import analytics
 
@@ -19,7 +20,7 @@ from app.api.routers.weather import router as weather_router
 
 # Імпорт конфігурації та залежностей
 from app.config import settings
-from app.database import SessionLocal
+from app.database import get_db
 
 logger = logging.getLogger(__name__)
 
@@ -83,17 +84,14 @@ async def root():
 
 
 @app.get("/health", tags=["Health"])
-async def health_check():
+async def health_check(db: Session = Depends(get_db)):
     """Перевірка стану сервісу та підключення до БД."""
     database_ok = True
-    db = SessionLocal()
     try:
         db.execute(text("SELECT 1"))
     except Exception:
         logger.exception("Health check: помилка підключення до БД")
         database_ok = False
-    finally:
-        db.close()
 
     return {
         "status": "healthy" if database_ok else "degraded",
