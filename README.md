@@ -17,9 +17,10 @@ WeatherTracker API дозволяє користувачам:
 - **База даних**: PostgreSQL, SQLAlchemy, Alembic
 - **Аутентифікація**: JWT токени
 - **Зовнішнє API**: OpenWeatherMap
-- **Тестування**: pytest
-- **Кешування**: Redis (планується)
-- **Контейнеризація**: Docker + docker-compose (планується)
+- **Тестування**: pytest (+ покриття), TestClient
+- **Якість коду**: ruff, mypy (CI)
+- **Кешування**: Redis
+- **Контейнеризація**: Docker + docker-compose
 
 ## 🛠️ Встановлення та запуск
 
@@ -82,57 +83,86 @@ python app/main.py
 - Відкрити http://127.0.0.1:8000/docs - Swagger UI документація
 - Відкрити http://127.0.0.1:8000/redoc - ReDoc документація
 
+## 🐳 Запуск через Docker
+
+```bash
+# Dev-режим (live-reload, локальні Postgres + Redis)
+docker compose -f docker/docker-compose.dev.yml up --build
+
+# Production-подібний стек (потрібен заданий SECRET_KEY)
+SECRET_KEY=$(openssl rand -hex 32) \
+docker compose -f docker/docker-compose.yml up -d --build
+```
+
+> ⚠️ У `ENVIRONMENT=production` застосунок **не запуститься** з плейсхолдер-`SECRET_KEY`,
+> з `DEBUG=true` або з CORS `*` — це навмисний запобіжник у `app/config.py`.
+
 ## 📚 API Документація
 
 Після запуску сервера документація доступна за адресами:
 - **Swagger UI**: http://127.0.0.1:8000/docs
 - **ReDoc**: http://127.0.0.1:8000/redoc
 
-### Основні ендпойнти (планується)
+### Основні ендпойнти
 
 #### Аутентифікація
 - `POST /auth/register` - Реєстрація користувача
 - `POST /auth/login` - Авторизація користувача
+- `POST /auth/refresh` - Оновлення токена
+- `GET /auth/me` - Поточний користувач
 
 #### Користувачі
 - `GET /users/me` - Отримання профілю поточного користувача
 
 #### Погода
 - `GET /weather/current?city=Kyiv` - Поточна погода для міста
-- `GET /weather/forecast?city=Kyiv` - Прогноз на 5 днів
+- `GET /weather/forecast?city=Kyiv&days=5` - Прогноз на кілька днів
+- `GET /weather/current/coordinates?latitude=..&longitude=..` - Погода за координатами
+- `GET /weather/history` - Історія запитів користувача (з пагінацією)
+- `DELETE /weather/history/{id}` - Видалення запису з історії
+- `GET /weather/stats` - Статистика запитів
 
-#### Історія
-- `GET /history` - Історія запитів користувача
-- `DELETE /history/{id}` - Видалення запису з історії
+#### Аналітика
+- `GET /api/v1/analytics/summary` - Зведена аналітика
+- `GET /api/v1/analytics/cities/popular` - Популярні міста
+- `GET /api/v1/analytics/export/csv` - Експорт у CSV
 
 ## 🧪 Тестування
 
 ```bash
-# Запуск всіх тестів
+# Запуск усіх тестів (покриття + поріг 60% налаштовані в pytest.ini)
 pytest
 
-# Запуск з покриттям коду
-pytest --cov=app
+# Лінтер та перевірка типів
+ruff check app tests
+mypy app --ignore-missing-imports
 
-# Запуск конкретного тестового файлу
-pytest tests/test_auth_service.py -v
+# Запуск конкретного файлу
+pytest tests/integration/test_api.py -v
 ```
+
+CI (`.github/workflows/tests.yml`) проганяє ruff + mypy + pytest на кожен push/PR.
 
 ## 🔧 Розробка
 
 ### Структура проекту
 ```
-weathertracker/
+WeatherTrackerAPI/
 ├── app/
-│   ├── main.py              # Точка входу FastAPI
-│   ├── config.py            # Конфігурація
-│   ├── models/              # SQLAlchemy моделі
-│   ├── schemas/             # Pydantic схеми
-│   ├── routers/             # API роутери
-│   ├── services/            # Бізнес логіка
-│   └── utils/               # Допоміжні функції
-├── tests/                   # Тести
+│   ├── main.py              # Точка входу FastAPI (lifespan, CORS, роутери)
+│   ├── config.py            # Конфігурація + prod-валідатор безпеки
+│   ├── database.py          # Engine, SessionLocal, get_db
+│   ├── dependencies.py      # FastAPI-залежності (auth, get_db)
+│   └── api/
+│       ├── models/          # SQLAlchemy моделі
+│       ├── schemas/         # Pydantic схеми
+│       ├── routers/         # API роутери (тонкі)
+│       ├── services/        # Бізнес-логіка
+│       ├── repositories/    # Доступ до БД
+│       └── utils/           # Клієнти (OpenWeather, Redis, email)
+├── tests/                   # unit + integration (TestClient)
 ├── alembic/                 # Міграції БД
+├── docker/                  # Dockerfile + compose (prod/dev)
 └── requirements.txt         # Залежності
 ```
 
@@ -146,7 +176,7 @@ weathertracker/
 ## 📝 План розробки
 
 - [x] **Тиждень 1**: Базове налаштування, аутентифікація
-- [ ] **Тиждень 2**: Інтеграція з OpenWeather API
-- [ ] **Тиждень 3**: Історія запитів, кешування
-- [ ] **Тиждень 4**: Тестування, Docker, розгортання
+- [x] **Тиждень 2**: Інтеграція з OpenWeather API
+- [x] **Тиждень 3**: Історія запитів, аналітика, кешування
+- [x] **Тиждень 4**: Тестування, Docker, CI
 
