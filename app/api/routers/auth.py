@@ -11,17 +11,12 @@ Authentication Router для WeatherTracker API
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
-from app.dependencies import get_db, get_current_user
-from app.api.services.auth_service import get_auth_service
+
 from app.api.models.user import User
-from app.api.schemas.auth import (
-    LoginResponse,
-    RegisterRequest,
-    RegisterResponse,
-    Token
-)
+from app.api.schemas.auth import LoginResponse, RegisterRequest, RegisterResponse, Token
 from app.api.schemas.user import UserResponse
-from datetime import datetime
+from app.api.services.auth_service import get_auth_service
+from app.dependencies import get_current_user, get_db
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 

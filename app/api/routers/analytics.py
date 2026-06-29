@@ -1,18 +1,16 @@
 """
 Analytics Router для WeatherTracker API
 """
-from fastapi import APIRouter, Depends, Query, HTTPException, Response
-from sqlalchemy.orm import Session
-from sqlalchemy import func
-from typing import Optional, List, Dict, Any
-import csv
-import io
+import logging
+from typing import Any, Dict, Optional
 
-from app.database import get_db
-from app.dependencies import get_current_user
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
+
 from app.api.models.user import User
-from app.api.services.analytics_service import get_analytics_service, AnalyticsService
+from app.api.services.analytics_service import AnalyticsService, get_analytics_service
+from app.dependencies import get_current_user
 
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/analytics", tags=["Analytics"])
 
 
@@ -27,8 +25,9 @@ async def get_analytics_summary(
     try:
         summary = await analytics_service.get_analytics_summary()
         return summary
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Помилка отримання огляду: {str(e)}")
+    except Exception:
+        logger.exception("Analytics endpoint failed")
+        raise HTTPException(status_code=500, detail="Внутрішня помилка під час отримання огляду аналітики")
 
 
 @router.get("/user/stats", response_model=Dict[str, Any])
@@ -49,8 +48,9 @@ async def get_user_statistics(
     try:
         stats = await analytics_service.get_user_statistics(current_user.id)
         return stats
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Помилка отримання статистики: {str(e)}")
+    except Exception:
+        logger.exception("Analytics endpoint failed")
+        raise HTTPException(status_code=500, detail="Внутрішня помилка під час отримання статистики")
 
 
 @router.get("/cities/popular", response_model=Dict[str, Any])
@@ -71,8 +71,9 @@ async def get_popular_cities(
     try:
         popular_cities = await analytics_service.get_popular_cities(limit=limit)
         return popular_cities
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Помилка отримання популярних міст: {str(e)}")
+    except Exception:
+        logger.exception("Analytics endpoint failed")
+        raise HTTPException(status_code=500, detail="Внутрішня помилка під час отримання популярних міст")
 
 
 @router.get("/temperature/trends", response_model=Dict[str, Any])
@@ -97,8 +98,9 @@ async def get_temperature_trends(
             period_days=period_days
         )
         return trends
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Помилка аналізу температурних трендів: {str(e)}")
+    except Exception:
+        logger.exception("Analytics endpoint failed")
+        raise HTTPException(status_code=500, detail="Внутрішня помилка під час аналізу температурних трендів")
 
 
 @router.get("/export/csv")
@@ -122,8 +124,9 @@ async def export_weather_data_csv(
             }
         )
         return response
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Помилка експорту в CSV: {str(e)}")
+    except Exception:
+        logger.exception("Analytics endpoint failed")
+        raise HTTPException(status_code=500, detail="Внутрішня помилка під час експорту в CSV")
 
 
 @router.get("/export/json")
@@ -146,8 +149,9 @@ async def export_weather_data_json(
             "period_days": period_days,
             "exported_at": datetime.utcnow().isoformat()
         }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Помилка експорту в JSON: {str(e)}")
+    except Exception:
+        logger.exception("Analytics endpoint failed")
+        raise HTTPException(status_code=500, detail="Внутрішня помилка під час експорту в JSON")
 
 
 # Додатковий endpoint для адміністрування
@@ -164,41 +168,7 @@ async def get_system_overview(
         raise HTTPException(status_code=403, detail="Недостатньо прав для доступу")
 
     try:
-        from app.api.models.weather_request import WeatherRequest
-
-        # Статистика по всій системі
-        total_users = analytics_service.db.query(func.count(User.id)).scalar()
-        total_requests = analytics_service.db.query(func.count(WeatherRequest.id)).scalar()
-
-        # Активність за сьогодні
-        from datetime import datetime, timedelta
-        today = datetime.utcnow().date()
-        today_start = datetime.combine(today, datetime.min.time())
-
-        today_requests = analytics_service.db.query(WeatherRequest).filter(
-            WeatherRequest.created_at >= today_start
-        ).count()
-
-        # Топ користувачі
-        top_users = analytics_service.db.query(
-            User.username,
-            func.count(WeatherRequest.id).label('request_count')
-        ).join(WeatherRequest, User.id == WeatherRequest.user_id).group_by(
-            User.id, User.username
-        ).order_by(func.count(WeatherRequest.id).desc()).limit(5).all()
-
-        return {
-            "system_stats": {
-                "total_users": total_users,
-                "total_requests": total_requests,
-                "requests_today": today_requests
-            },
-            "top_users": [
-                {"username": username, "requests": count}
-                for username, count in top_users
-            ],
-            "generated_at": datetime.utcnow().isoformat()
-        }
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Помилка отримання огляду системи: {str(e)}")
+        return await analytics_service.get_system_overview()
+    except Exception:
+        logger.exception("Analytics endpoint failed")
+        raise HTTPException(status_code=500, detail="Внутрішня помилка під час отримання огляду системи")

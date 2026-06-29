@@ -10,11 +10,12 @@ Users Router для WeatherTracker API
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from app.dependencies import get_db, get_current_active_user
-from app.api.services.auth_service import get_auth_service
+
 from app.api.models.user import User
-from app.api.schemas.user import UserResponse, UserUpdate, PasswordChangeRequest
 from app.api.schemas.base import MessageResponse
+from app.api.schemas.user import PasswordChangeRequest, UserResponse, UserUpdate
+from app.api.services.auth_service import get_auth_service
+from app.dependencies import get_current_active_user, get_db
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
@@ -191,7 +192,7 @@ async def get_user_by_id(
     Raises:
         HTTPException: 404 якщо користувач не знайдений
     """
-    user = db.query(User).filter(User.id == user_id, User.is_active == True).first()
+    user = db.query(User).filter(User.id == user_id, User.is_active.is_(True)).first()
 
     if not user:
         raise HTTPException(

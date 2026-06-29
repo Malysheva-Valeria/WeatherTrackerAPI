@@ -2,9 +2,10 @@
 Analytics Pydantic схеми для WeatherTracker API
 """
 
+from typing import Any, Dict, List, Optional
+
 from pydantic import BaseModel, Field
-from typing import List, Optional, Dict, Any
-from datetime import datetime
+
 from app.api.schemas.base import BaseSchema
 
 

@@ -2,9 +2,11 @@
 Pydantic схеми для прогнозів погоди
 """
 
+from datetime import date, datetime
+from typing import List, Optional
+
 from pydantic import BaseModel, Field, validator
-from typing import List, Optional, Dict, Any, Union
-from datetime import datetime, date
+
 from app.api.schemas.base import TimestampSchema
 
 

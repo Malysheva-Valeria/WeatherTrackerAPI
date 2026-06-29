@@ -4,70 +4,24 @@ Weather Router для WeatherTracker API
 Ендпойнти для роботи з погодою та історією запитів
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query
-from sqlalchemy.orm import Session
-from typing import List, Optional
+import logging
 
-from app.dependencies import get_db, get_current_active_user
-from app.api.services.weather_service import get_weather_service
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy.orm import Session
+
 from app.api.models.user import User
-from app.api.models.weather_request import WeatherRequest
-from app.api.schemas.weather import (
-    WeatherRequest as WeatherRequestSchema,
-    CurrentWeatherResponse,
-    WeatherHistoryItem,
-    WeatherHistoryResponse
-)
+from app.api.repositories.weather_repository import WeatherRequestRepository
 from app.api.schemas.base import MessageResponse
 from app.api.schemas.forecast import ForecastResponse
-
-import logging
-from datetime import datetime
-
+from app.api.schemas.weather import CurrentWeatherResponse, WeatherHistoryItem, WeatherHistoryResponse
+from app.api.services.weather_service import get_weather_service
+from app.dependencies import get_current_active_user, get_db
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/weather", tags=["Weather"])
 
 WeatherResponse = CurrentWeatherResponse
 
-async def save_weather_request(
-        db: Session,
-        user_id: int,
-        city: str,
-        country: str,
-        weather_data: dict,
-        is_cached: bool = False,
-        is_mock: bool = False
-) -> None:
-    """Збереження погодного запиту в історію"""
-    try:
-        from app.api.models.weather_request import WeatherRequest as WeatherRequestModel
-
-        weather_request = WeatherRequestModel(
-            user_id=user_id,
-            city=city,
-            country=country,
-            temperature=weather_data.get('temperature'),
-            feels_like=weather_data.get('feels_like'),
-            description=weather_data.get('description', ''),
-            weather_condition=weather_data.get('condition', ''),
-            humidity=weather_data.get('humidity'),
-            pressure=weather_data.get('pressure'),
-            wind_speed=weather_data.get('wind_speed'),
-            wind_direction=weather_data.get('wind_direction'),
-            request_time=datetime.utcnow(),
-            response_data=weather_data,
-            is_cached=is_cached,
-            is_mock=is_mock
-        )
-
-        db.add(weather_request)
-        db.commit()
-        logger.info(f"Weather request saved for user {user_id}, city {city}")
-
-    except Exception as e:
-        logger.error(f"Error saving weather request: {e}")
-        db.rollback()
 
 @router.get("/current", response_model=CurrentWeatherResponse)
 async def get_current_weather(
@@ -92,27 +46,16 @@ async def get_current_weather(
         raw_weather_data = await weather_service.get_current_weather(city)
         formatted_data = weather_service.format_weather_response(raw_weather_data)
 
-        # Збереження запиту в історію
-        weather_request = WeatherRequest(
+        # Збереження запиту в історію через репозиторій
+        WeatherRequestRepository(db).create_from_weather_data(
             user_id=current_user.id,
             city=formatted_data["city"],
             country=formatted_data["country"],
-            temperature=formatted_data["temperature"],
-            feels_like=formatted_data["feels_like"],
-            description=formatted_data["description"],
-            weather_condition=formatted_data["condition"],
-            humidity=formatted_data["humidity"],
-            pressure=formatted_data["pressure"],
-            wind_speed=formatted_data["wind_speed"],
-            wind_direction=formatted_data["wind_direction"],
+            weather_data=formatted_data,
+            raw_data=raw_weather_data,
             is_cached=formatted_data["cached"],
             is_mock=formatted_data["mock"],
-            response_data=raw_weather_data
         )
-
-        db.add(weather_request)
-        db.commit()
-        db.refresh(weather_request)
 
         return CurrentWeatherResponse(**formatted_data)
 
@@ -121,10 +64,11 @@ async def get_current_weather(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(e)
         )
-    except Exception as e:
+    except Exception:
+        logger.exception("Помилка отримання даних погоди для міста %s", city)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Помилка отримання даних погоди: {str(e)}"
+            detail="Внутрішня помилка під час отримання даних погоди"
         )
 
 
@@ -149,26 +93,10 @@ async def get_weather_history(
     Returns:
         WeatherHistoryResponse: Список історії запитів
     """
-    # Базовий запит
-    query = db.query(WeatherRequest).filter(
-        WeatherRequest.user_id == current_user.id
+    items, total = WeatherRequestRepository(db).list_for_user(
+        current_user.id, page=page, size=size, city=city
     )
 
-    # Фільтр за містом якщо вказано
-    if city:
-        query = query.filter(WeatherRequest.city.ilike(f"%{city}%"))
-
-    # Сортування за часом (найновіші першими)
-    query = query.order_by(WeatherRequest.request_time.desc())
-
-    # Загальна кількість
-    total = query.count()
-
-    # Пагінація
-    offset = (page - 1) * size
-    items = query.offset(offset).limit(size).all()
-
-    # Конвертація в схеми
     history_items = [WeatherHistoryItem.from_orm(item) for item in items]
 
     return WeatherHistoryResponse(
@@ -196,11 +124,8 @@ async def delete_weather_history_item(
     Returns:
         MessageResponse: Повідомлення про успішне видалення
     """
-    # Пошук запису
-    weather_request = db.query(WeatherRequest).filter(
-        WeatherRequest.id == request_id,
-        WeatherRequest.user_id == current_user.id
-    ).first()
+    repo = WeatherRequestRepository(db)
+    weather_request = repo.get_for_user(current_user.id, request_id)
 
     if not weather_request:
         raise HTTPException(
@@ -208,11 +133,10 @@ async def delete_weather_history_item(
             detail="Запис історії не знайдений"
         )
 
-    # Видалення
-    db.delete(weather_request)
-    db.commit()
+    city_name = weather_request.city
+    repo.delete(weather_request)
 
-    return MessageResponse(message=f"Запис історії для міста '{weather_request.city}' видалено")
+    return MessageResponse(message=f"Запис історії для міста '{city_name}' видалено")
 
 
 @router.delete("/history", response_model=MessageResponse)
@@ -230,16 +154,7 @@ async def clear_weather_history(
     Returns:
         MessageResponse: Повідомлення про успішне очищення
     """
-    # Підрахунок кількості записів
-    count = db.query(WeatherRequest).filter(
-        WeatherRequest.user_id == current_user.id
-    ).count()
-
-    # Видалення всіх записів користувача
-    db.query(WeatherRequest).filter(
-        WeatherRequest.user_id == current_user.id
-    ).delete()
-    db.commit()
+    count = WeatherRequestRepository(db).delete_all_for_user(current_user.id)
 
     return MessageResponse(message=f"Видалено {count} записів з історії погоди")
 
@@ -259,45 +174,7 @@ async def get_weather_stats(
     Returns:
         dict: Статистика запитів
     """
-    from sqlalchemy import func, distinct
-
-    # Загальна кількість запитів
-    total_requests = db.query(WeatherRequest).filter(
-        WeatherRequest.user_id == current_user.id
-    ).count()
-
-    # Кількість унікальних міст
-    unique_cities = db.query(distinct(WeatherRequest.city)).filter(
-        WeatherRequest.user_id == current_user.id
-    ).count()
-
-    # Найпопулярніше місто
-    popular_city = db.query(
-        WeatherRequest.city,
-        func.count(WeatherRequest.id).label('count')
-    ).filter(
-        WeatherRequest.user_id == current_user.id
-    ).group_by(WeatherRequest.city).order_by(
-        func.count(WeatherRequest.id).desc()
-    ).first()
-
-    # Останній запит
-    last_request = db.query(WeatherRequest).filter(
-        WeatherRequest.user_id == current_user.id
-    ).order_by(WeatherRequest.request_time.desc()).first()
-
-    return {
-        "total_requests": total_requests,
-        "unique_cities": unique_cities,
-        "most_popular_city": {
-            "city": popular_city.city if popular_city else None,
-            "requests_count": popular_city.count if popular_city else 0
-        },
-        "last_request": {
-            "city": last_request.city if last_request else None,
-            "time": last_request.request_time.isoformat() if last_request else None
-        }
-    }
+    return WeatherRequestRepository(db).stats_for_user(current_user.id)
 
 @router.get("/forecast", response_model=ForecastResponse)
 async def get_weather_forecast(
@@ -350,10 +227,11 @@ async def get_weather_forecast(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e)
         )
-    except Exception as e:
+    except Exception:
+        logger.exception("Помилка отримання прогнозу погоди (city=%s)", city)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Помилка отримання прогнозу погоди: {str(e)}"
+            detail="Внутрішня помилка під час отримання прогнозу погоди"
         )
 
 @router.get("/forecast/coordinates", response_model=ForecastResponse, tags=["Weather"])
@@ -396,8 +274,8 @@ async def get_forecast_by_coordinates(
             db=db
         )
 
-        logger.info(
-            f"Прогноз по координатах отримано успішно: {forecast_data.city if hasattr(forecast_data, 'city') else 'координати'}")
+        resolved_city = forecast_data.city if hasattr(forecast_data, 'city') else 'координати'
+        logger.info("Прогноз по координатах отримано успішно: %s", resolved_city)
         return forecast_data
 
     except ValueError as e:
@@ -406,11 +284,11 @@ async def get_forecast_by_coordinates(
             status_code=400,
             detail=f"Помилка координат: {str(e)}"
         )
-    except Exception as e:
-        logger.error(f"Помилка отримання прогнозу по координатах: {e}")
+    except Exception:
+        logger.exception("Помилка отримання прогнозу по координатах %s, %s", latitude, longitude)
         raise HTTPException(
             status_code=500,
-            detail=f"Помилка отримання прогнозу по координатах: {str(e)}"
+            detail="Внутрішня помилка під час отримання прогнозу по координатах"
         )
 
 
@@ -443,15 +321,15 @@ async def get_current_weather_by_coordinates(
         # Форматування відповіді
         weather_data = weather_service.format_weather_response(raw_weather_data)
 
-        # Збереження в історію
-        await save_weather_request(
-            db=db,
+        # Збереження в історію через репозиторій
+        WeatherRequestRepository(db).create_from_weather_data(
             user_id=current_user.id,
             city=weather_data.get("city", f"Координати {latitude}, {longitude}"),
             country=weather_data.get("country", "Unknown"),
             weather_data=weather_data,
+            raw_data=raw_weather_data,
             is_cached=weather_data.get("cached", False),
-            is_mock=weather_data.get("mock", False)
+            is_mock=weather_data.get("mock", False),
         )
         logger.info(f"Поточна погода по координатах отримана: {weather_data.get('city', 'координати')}")
         return weather_data
@@ -462,9 +340,9 @@ async def get_current_weather_by_coordinates(
             status_code=400,
             detail=f"Помилка координат: {str(e)}"
         )
-    except Exception as e:
-        logger.error(f"Помилка отримання поточної погоди по координатах: {e}")
+    except Exception:
+        logger.exception("Помилка отримання поточної погоди по координатах %s, %s", latitude, longitude)
         raise HTTPException(
             status_code=500,
-            detail=f"Помилка отримання поточної погоди: {str(e)}"
+            detail="Внутрішня помилка під час отримання поточної погоди"
         )

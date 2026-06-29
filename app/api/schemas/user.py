@@ -4,9 +4,11 @@ User Pydantic схеми для WeatherTracker API
 Схеми для роботи з користувачами
 """
 
-from pydantic import BaseModel, EmailStr, ConfigDict, Field
-from typing import Optional
 from datetime import datetime
+from typing import Optional
+
+from pydantic import ConfigDict, EmailStr, Field
+
 from app.api.schemas.base import BaseSchema
 
 

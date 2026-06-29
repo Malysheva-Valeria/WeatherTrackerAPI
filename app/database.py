@@ -1,11 +1,11 @@
 """
 Налаштування бази даних для WeatherTracker API
 """
+import logging
+
 from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import QueuePool
-import logging
 
 from app.config import settings
 
@@ -30,8 +30,9 @@ SessionLocal = sessionmaker(
     bind=engine
 )
 
-# Імпорт базового класу з моделей
-from app.api.models.base import Base
+# Імпорт базового класу з моделей (після створення engine, щоб уникнути
+# циклічного імпорту через app.config)
+from app.api.models.base import Base  # noqa: E402
 
 
 def get_db():
@@ -72,7 +73,7 @@ def test_connection():
 
         db = SessionLocal()
         # Простий запит для перевірки
-        result = db.execute(text("SELECT 1 as test"))
+        db.execute(text("SELECT 1 as test"))
         db.close()
         return True
     except Exception as e:

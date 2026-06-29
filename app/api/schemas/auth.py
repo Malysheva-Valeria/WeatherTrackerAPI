@@ -4,8 +4,10 @@ Authentication Pydantic схеми для WeatherTracker API
 Схеми для аутентифікації та авторизації
 """
 
-from pydantic import BaseModel, EmailStr, Field, ConfigDict
 from typing import Optional
+
+from pydantic import EmailStr, Field
+
 from app.api.schemas.base import BaseSchema
 from app.api.schemas.user import UserResponse
 

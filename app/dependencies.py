@@ -7,30 +7,22 @@ FastAPI Dependencies для WeatherTracker API
 - Перевірки прав доступу
 """
 
-from typing import Generator, Optional
+from typing import Optional
+
 from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
-from app.database import SessionLocal
-from app.api.services.auth_service import get_auth_service
+
 from app.api.models.user import User
+from app.api.services.auth_service import get_auth_service
+
+# get_db визначений в одному місці (app.database) і ре-експортується тут, щоб
+# усі роутери використовували ОДИН і той самий обʼєкт залежності — інакше
+# dependency_overrides у тестах не покриває частину ендпоінтів.
+from app.database import get_db
 
 # HTTP Bearer scheme для JWT токенів
 security = HTTPBearer()
-
-
-def get_db() -> Generator[Session, None, None]:
-    """
-    Dependency для отримання сесії бази даних
-
-    Yields:
-        Session: Сесія SQLAlchemy
-    """
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
 
 
 def get_current_user(
