@@ -16,6 +16,7 @@ WeatherTracker API дозволяє користувачам:
 - **Backend**: Python 3.11+, FastAPI
 - **База даних**: PostgreSQL, SQLAlchemy, Alembic
 - **Аутентифікація**: JWT токени
+- **Захист**: rate limiting на ендпоінтах входу/реєстрації (Redis + fallback)
 - **Зовнішнє API**: OpenWeatherMap
 - **Тестування**: pytest (+ покриття), TestClient
 - **Якість коду**: ruff, mypy (CI)
@@ -110,6 +111,9 @@ docker compose -f docker/docker-compose.yml up -d --build
 - `POST /auth/login` - Авторизація користувача
 - `POST /auth/refresh` - Оновлення токена
 - `GET /auth/me` - Поточний користувач
+
+> 🛡️ `/auth/login` і `/auth/register` обмежені rate limiter'ом
+> (`RATE_LIMIT_AUTH_MAX` запитів за `RATE_LIMIT_AUTH_WINDOW` секунд на IP) — захист від брутфорсу.
 
 #### Користувачі
 - `GET /users/me` - Отримання профілю поточного користувача

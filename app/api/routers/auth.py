@@ -12,16 +12,26 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
+from app.api.core.rate_limiter import rate_limit
 from app.api.models.user import User
 from app.api.schemas.auth import LoginResponse, RegisterRequest, RegisterResponse, Token
 from app.api.schemas.user import UserResponse
 from app.api.services.auth_service import get_auth_service
+from app.config import settings
 from app.dependencies import get_current_user, get_db
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
+# Спільний ліміт для чутливих ендпоінтів аутентифікації (проти брутфорсу)
+_auth_rate_limit = rate_limit(settings.RATE_LIMIT_AUTH_MAX, settings.RATE_LIMIT_AUTH_WINDOW)
 
-@router.post("/register", response_model=RegisterResponse, status_code=status.HTTP_201_CREATED)
+
+@router.post(
+    "/register",
+    response_model=RegisterResponse,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[_auth_rate_limit],
+)
 async def register(
         user_data: RegisterRequest,
         db: Session = Depends(get_db)
@@ -95,7 +105,7 @@ async def register(
     )
 
 
-@router.post("/login", response_model=LoginResponse)
+@router.post("/login", response_model=LoginResponse, dependencies=[_auth_rate_limit])
 async def login(
         form_data: OAuth2PasswordRequestForm = Depends(),
         db: Session = Depends(get_db)

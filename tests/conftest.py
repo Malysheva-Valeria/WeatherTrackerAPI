@@ -16,13 +16,18 @@ from app.main import app
 
 
 @pytest.fixture(autouse=True)
-def _isolated_cache():
-    """Тести працюють без Redis: примусово in-memory кеш, очищений між тестами."""
+def _isolated_state():
+    """Тести працюють без Redis: примусово in-memory кеш і rate limiter,
+    очищені між тестами (інакше лічильники накопичуються по всій сесії)."""
+    from app.api.core.rate_limiter import rate_limiter
     from app.api.services.cache_service import cache_service
-    cache_service._memory.clear()
-    cache_service._redis_enabled = False
+
+    for obj in (cache_service, rate_limiter):
+        obj._memory.clear()
+        obj._redis_enabled = False
     yield
-    cache_service._memory.clear()
+    for obj in (cache_service, rate_limiter):
+        obj._memory.clear()
 
 
 @pytest.fixture

@@ -40,6 +40,10 @@ class Settings(BaseSettings):
     WEATHER_TIMEOUT: int = 10  # 10 секунд
     WEATHER_USE_MOCK: bool = False
 
+    # Rate limiting (на ендпоінтах аутентифікації, проти брутфорсу)
+    RATE_LIMIT_AUTH_MAX: int = 5  # запитів
+    RATE_LIMIT_AUTH_WINDOW: int = 60  # за N секунд
+
     # Application settings
     DEBUG: bool = False
     APP_HOST: str = "127.0.0.1"
