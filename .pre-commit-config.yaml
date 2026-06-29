@@ -1,0 +1,31 @@
+# Локальні перевірки перед комітом (та сама якість, що й у CI).
+# Встановлення:  pip install pre-commit && pre-commit install
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.6.9
+    hooks:
+      - id: ruff
+        args: [--fix]
+      - id: ruff-format
+        # лише перевірка, без авто-форматування (проєкт не форматований ruff-format)
+        args: [--check]
+        stages: [manual]
+
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.11.2
+    hooks:
+      - id: mypy
+        files: ^app/
+        additional_dependencies:
+          - pydantic>=2
+          - pydantic-settings
+          - sqlalchemy>=2
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: check-yaml
+      - id: check-added-large-files
+      - id: check-merge-conflict

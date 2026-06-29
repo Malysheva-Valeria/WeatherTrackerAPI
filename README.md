@@ -143,6 +143,22 @@ pytest tests/integration/test_api.py -v
 
 CI (`.github/workflows/tests.yml`) проганяє ruff + mypy + pytest на кожен push/PR.
 
+### Зручні команди (Makefile)
+
+```bash
+make install   # venv + залежності для розробки
+make check     # lint + type + test (як у CI)
+make run       # dev-сервер з авто-перезавантаженням
+make migrate   # застосувати міграції
+make docker-up # підняти dev-стек у Docker
+```
+
+Опційно — локальні перевірки перед комітом:
+
+```bash
+pip install pre-commit && pre-commit install
+```
+
 ## 🔧 Розробка
 
 ### Структура проекту
