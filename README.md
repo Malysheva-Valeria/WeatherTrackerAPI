@@ -111,6 +111,8 @@ docker compose -f docker/docker-compose.yml up -d --build
 - `POST /auth/login` - Авторизація користувача
 - `POST /auth/refresh` - Оновлення токенів за refresh-токеном (**з ротацією**)
 - `POST /auth/logout` - Відкликання refresh-токена
+- `POST /auth/verify-email` - Підтвердження email за токеном з листа
+- `POST /auth/resend-verification` - Повторна відправка листа підтвердження
 - `GET /auth/me` - Поточний користувач
 
 > 🛡️ `/auth/login` і `/auth/register` обмежені rate limiter'ом

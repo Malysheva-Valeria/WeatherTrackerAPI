@@ -281,6 +281,39 @@ class AuthService:
         db.commit()
         return True
 
+    def create_email_verification_token(self, user: User) -> str:
+        """JWT-токен для підтвердження email (короткоживучий, type=verify)."""
+        expire = datetime.now(timezone.utc) + timedelta(hours=settings.EMAIL_VERIFICATION_EXPIRE_HOURS)
+        return jwt.encode(
+            {"sub": str(user.id), "type": "verify", "exp": expire, "iat": datetime.now(timezone.utc)},
+            self.SECRET_KEY,
+            algorithm=self.ALGORITHM,
+        )
+
+    def verify_email_token(self, db: Session, token: str) -> Optional[User]:
+        """Перевіряє токен підтвердження та позначає користувача верифікованим."""
+        payload = self.verify_token(token)
+        if not payload or payload.get("type") != "verify":
+            return None
+
+        sub = payload.get("sub")
+        if sub is None:
+            return None
+        try:
+            user_id = int(sub)
+        except (ValueError, TypeError):
+            return None
+
+        user = db.query(User).filter(User.id == user_id).first()
+        if not user:
+            return None
+
+        if not user.is_verified:
+            user.is_verified = True
+            db.commit()
+            db.refresh(user)
+        return user
+
     def validate_password_strength(self, password: str) -> Tuple[bool, str]:
         """
         Перевірка сили пароля

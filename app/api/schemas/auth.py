@@ -40,6 +40,11 @@ class RefreshRequest(BaseSchema):
     refresh_token: str = Field(..., description="Дійсний refresh-токен")
 
 
+class VerifyEmailRequest(BaseSchema):
+    """Схема запиту на підтвердження email"""
+    token: str = Field(..., description="Токен підтвердження з листа")
+
+
 class LoginResponse(Token):
     """Схема для відповіді на логін"""
     message: str

@@ -14,9 +14,18 @@ from sqlalchemy.orm import Session
 
 from app.api.core.rate_limiter import rate_limit
 from app.api.models.user import User
-from app.api.schemas.auth import LoginResponse, RefreshRequest, RegisterRequest, RegisterResponse, Token
+from app.api.schemas.auth import (
+    LoginResponse,
+    RefreshRequest,
+    RegisterRequest,
+    RegisterResponse,
+    Token,
+    VerifyEmailRequest,
+)
+from app.api.schemas.base import MessageResponse
 from app.api.schemas.user import UserResponse
 from app.api.services.auth_service import get_auth_service
+from app.api.services.email_service import get_email_service
 from app.config import settings
 from app.dependencies import get_current_user, get_db
 
@@ -92,6 +101,10 @@ async def register(
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
+
+    # Надсилання листа підтвердження email
+    verification_token = auth_service.create_email_verification_token(new_user)
+    get_email_service().send_verification_email(new_user.email, verification_token)
 
     # Створення токенів для нового користувача (access + refresh)
     tokens = auth_service.issue_tokens(db, new_user)
@@ -197,6 +210,45 @@ async def logout(
         "message": "Успішний вихід з системи",
         "revoked": revoked,
     }
+
+
+@router.post("/verify-email", response_model=MessageResponse)
+async def verify_email(
+        body: VerifyEmailRequest,
+        db: Session = Depends(get_db)
+):
+    """
+    Підтвердження email за токеном з листа.
+
+    Raises:
+        HTTPException: 400 якщо токен невалідний або протермінований
+    """
+    auth_service = get_auth_service()
+    user = auth_service.verify_email_token(db, body.token)
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Невалідний або протермінований токен підтвердження",
+        )
+    return MessageResponse(message="Email успішно підтверджено")
+
+
+@router.post("/resend-verification", response_model=MessageResponse)
+async def resend_verification(
+        current_user: User = Depends(get_current_user),
+):
+    """
+    Повторна відправка листа підтвердження для поточного користувача.
+    """
+    if current_user.is_verified:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email вже підтверджено",
+        )
+    auth_service = get_auth_service()
+    token = auth_service.create_email_verification_token(current_user)
+    get_email_service().send_verification_email(current_user.email, token)
+    return MessageResponse(message="Лист підтвердження надіслано")
 
 
 @router.get("/me", response_model=UserResponse)

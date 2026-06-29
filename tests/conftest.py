@@ -21,13 +21,16 @@ def _isolated_state():
     очищені між тестами (інакше лічильники накопичуються по всій сесії)."""
     from app.api.core.rate_limiter import rate_limiter
     from app.api.services.cache_service import cache_service
+    from app.api.utils.email_client import outbox
 
     for obj in (cache_service, rate_limiter):
         obj._memory.clear()
         obj._redis_enabled = False
+    outbox.clear()
     yield
     for obj in (cache_service, rate_limiter):
         obj._memory.clear()
+    outbox.clear()
 
 
 @pytest.fixture
