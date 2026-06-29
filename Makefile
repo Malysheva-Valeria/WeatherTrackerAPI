@@ -42,6 +42,9 @@ docker-up:  ## Підняти dev-стек у Docker
 docker-down:  ## Зупинити dev-стек
 	docker compose -f docker/docker-compose.dev.yml down
 
+monitor:  ## Підняти Prometheus + Grafana (моніторинг API на :8000)
+	docker compose -f docker/docker-compose.monitoring.yml up -d
+
 clean:  ## Прибрати кеші та артефакти
 	rm -rf .pytest_cache .mypy_cache .ruff_cache htmlcov .coverage
 	find . -type d -name __pycache__ -prune -exec rm -rf {} +

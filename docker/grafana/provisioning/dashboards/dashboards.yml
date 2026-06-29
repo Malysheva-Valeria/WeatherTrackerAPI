@@ -1,0 +1,12 @@
+# Провайдер дашбордів: підвантажує JSON-дашборди з теки.
+apiVersion: 1
+
+providers:
+  - name: WeatherTracker
+    orgId: 1
+    folder: ""
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    options:
+      path: /var/lib/grafana/dashboards

@@ -99,6 +99,15 @@ docker compose -f docker/docker-compose.yml up -d --build
 > ⚠️ У `ENVIRONMENT=production` застосунок **не запуститься** з плейсхолдер-`SECRET_KEY`,
 > з `DEBUG=true` або з CORS `*` — це навмисний запобіжник у `app/config.py`.
 
+### 📈 Моніторинг (Prometheus + Grafana)
+
+```bash
+make run        # API на :8000 (віддає /metrics)
+make monitor    # Prometheus :9090 + Grafana :3000 (admin/admin)
+```
+
+Дашборд **WeatherTracker** (rate, p95-латентність, статуси) провіжниться в Grafana автоматично.
+
 ## 📚 API Документація
 
 Після запуску сервера документація доступна за адресами:

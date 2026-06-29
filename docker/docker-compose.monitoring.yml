@@ -1,0 +1,35 @@
+# Стек моніторингу: Prometheus + Grafana.
+# Запуск (поряд із запущеним API на :8000):
+#   docker compose -f docker/docker-compose.monitoring.yml up -d
+# Grafana:    http://localhost:3000  (admin / admin)  — дашборд WeatherTracker уже провіжнено
+# Prometheus: http://localhost:9090
+services:
+  prometheus:
+    image: prom/prometheus:latest
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "9090:9090"
+    extra_hosts:
+      # дозволяє скрейпити API, що працює на хості (host.docker.internal)
+      - "host.docker.internal:host-gateway"
+
+  grafana:
+    image: grafana/grafana:latest
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+
+volumes:
+  grafana_data:

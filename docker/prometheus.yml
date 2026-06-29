@@ -1,0 +1,11 @@
+# Конфіг Prometheus — скрейпить /metrics застосунку WeatherTracker.
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: weathertracker-api
+    metrics_path: /metrics
+    static_configs:
+      # API, запущений на хості (make run) або у dev-compose з опублікованим портом 8000.
+      - targets: ["host.docker.internal:8000"]
