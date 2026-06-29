@@ -1,0 +1,98 @@
+"""Convert weather_requests.is_cached/is_mock from String to Boolean
+
+Revision ID: a1b2c3d4e5f6
+Revises: fbef48a236e0
+Create Date: 2026-06-29 00:00:00.000000
+
+Примітка: попередні міграції в цьому проєкті — порожні (схема історично
+створювалась через Base.metadata.create_all), тому ця міграція написана
+захищено: вона перевіряє наявність таблиці/колонок і застосовує зміни лише
+там, де це доречно. Завдяки цьому `alembic upgrade head` безпечний незалежно
+від того, як саме було створено схему.
+"""
+from typing import Sequence, Union
+
+from alembic import op
+import sqlalchemy as sa
+from sqlalchemy import inspect
+
+
+# revision identifiers, used by Alembic.
+revision: str = 'a1b2c3d4e5f6'
+down_revision: Union[str, Sequence[str], None] = 'fbef48a236e0'
+branch_labels: Union[str, Sequence[str], None] = None
+depends_on: Union[str, Sequence[str], None] = None
+
+TABLE = "weather_requests"
+BOOL_COLUMNS = ("is_cached", "is_mock")
+
+
+def _existing_columns() -> set:
+    bind = op.get_bind()
+    inspector = inspect(bind)
+    if TABLE not in inspector.get_table_names():
+        return set()
+    return {col["name"] for col in inspector.get_columns(TABLE)}
+
+
+def upgrade() -> None:
+    """String(10) -> Boolean для is_cached/is_mock."""
+    bind = op.get_bind()
+    columns = _existing_columns()
+    is_postgres = bind.dialect.name == "postgresql"
+
+    for column in BOOL_COLUMNS:
+        if column not in columns:
+            continue
+        if is_postgres:
+            # Явний CAST зі строкових значень ('true'/'false'/'') у boolean
+            op.execute(
+                f"ALTER TABLE {TABLE} "
+                f"ALTER COLUMN {column} DROP DEFAULT"
+            )
+            op.execute(
+                f"ALTER TABLE {TABLE} "
+                f"ALTER COLUMN {column} TYPE BOOLEAN "
+                f"USING (CASE WHEN lower({column}) IN ('true', 't', '1') THEN true ELSE false END)"
+            )
+            op.execute(
+                f"ALTER TABLE {TABLE} "
+                f"ALTER COLUMN {column} SET DEFAULT false"
+            )
+            op.execute(
+                f"ALTER TABLE {TABLE} "
+                f"ALTER COLUMN {column} SET NOT NULL"
+            )
+        else:
+            with op.batch_alter_table(TABLE) as batch_op:
+                batch_op.alter_column(
+                    column,
+                    type_=sa.Boolean(),
+                    existing_type=sa.String(length=10),
+                    nullable=False,
+                    server_default=sa.false(),
+                )
+
+
+def downgrade() -> None:
+    """Boolean -> String(10) (зворотна конвертація)."""
+    bind = op.get_bind()
+    columns = _existing_columns()
+    is_postgres = bind.dialect.name == "postgresql"
+
+    for column in BOOL_COLUMNS:
+        if column not in columns:
+            continue
+        if is_postgres:
+            op.execute(
+                f"ALTER TABLE {TABLE} "
+                f"ALTER COLUMN {column} TYPE VARCHAR(10) "
+                f"USING (CASE WHEN {column} THEN 'true' ELSE 'false' END)"
+            )
+        else:
+            with op.batch_alter_table(TABLE) as batch_op:
+                batch_op.alter_column(
+                    column,
+                    type_=sa.String(length=10),
+                    existing_type=sa.Boolean(),
+                )

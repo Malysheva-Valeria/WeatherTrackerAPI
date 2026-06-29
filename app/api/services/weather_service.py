@@ -2,29 +2,26 @@
 Weather Service для WeatherTracker API
 """
 
-import httpx
-import json
-from typing import Optional, Dict, Any
-from datetime import datetime, timedelta
-from app.config import settings
 import logging
-from typing import Optional, Dict, Any, List, Tuple
-from datetime import datetime, timedelta, date
+from datetime import date, datetime, timedelta
+from typing import Any, Dict, List, Optional
+
+import httpx
 from sqlalchemy.orm import Session
-from app.api.models.forecast_request import ForecastRequest, DailyForecast
+
+from app.api.models.forecast_request import DailyForecast, ForecastRequest
 from app.api.schemas.forecast import (
-    ForecastResponse,
+    AtmosphereData,
     DailyForecastData,
+    FeelsLikeData,  # Додай цей імпорт
+    ForecastResponse,
+    ForecastSummary,
+    PrecipitationData,
     TemperatureData,
     WeatherConditionData,
-    AtmosphereData,
     WindData,
-    PrecipitationData,
-    SunData,
-    ForecastSummary,
-    FeelsLikeData  # Додай цей імпорт
 )
-
+from app.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -124,6 +121,16 @@ class WeatherService:
                 "dt": int(datetime.now().timestamp())
             }
 
+    def _build_mock_current(self, city: str, cache_key: str) -> Dict[str, Any]:
+        """Побудова та кешування mock-даних поточної погоди (без рекурсії)"""
+        logger.warning(f"Використовуємо mock дані для {city}")
+        mock_data = self._get_mock_current_weather(city)
+        self.cache[cache_key] = {
+            'data': mock_data,
+            'cached_at': datetime.now()
+        }
+        return {**mock_data, "cached": False, "mock": True}
+
     async def get_current_weather(self, city: str, use_mock: bool = False) -> Dict[str, Any]:
         """
         Отримання поточної погоди для міста
@@ -143,16 +150,7 @@ class WeatherService:
 
         # Якщо використовується mock дані або немає API ключа
         if use_mock or not self.api_key:
-            logger.warning(f"Використовуємо mock дані для {city}")
-            mock_data = self._get_mock_current_weather(city)
-
-            # Кешування mock даних
-            self.cache[cache_key] = {
-                'data': mock_data,
-                'cached_at': datetime.now()
-            }
-
-            return {**mock_data, "cached": False, "mock": True}
+            return self._build_mock_current(city, cache_key)
 
         # Запит до OpenWeather API
         url = f"{self.base_url}/weather"
@@ -181,8 +179,7 @@ class WeatherService:
 
             elif response.status_code == 401:
                 logger.error("Недійсний API ключ OpenWeather")
-                # Fallback на mock дані
-                return await self.get_current_weather(city, use_mock=True)
+                return self._build_mock_current(city, cache_key)
 
             elif response.status_code == 404:
                 raise ValueError(f"Місто '{city}' не знайдено")
@@ -192,18 +189,15 @@ class WeatherService:
 
             else:
                 logger.error(f"OpenWeather API помилка: {response.status_code}")
-                # Fallback на mock дані
-                return await self.get_current_weather(city, use_mock=True)
+                return self._build_mock_current(city, cache_key)
 
         except httpx.TimeoutException:
             logger.error(f"Таймаут запиту для {city}")
-            # Fallback на mock дані
-            return await self.get_current_weather(city, use_mock=True)
+            return self._build_mock_current(city, cache_key)
 
         except Exception as e:
             logger.error(f"Несподівана помилка: {e}")
-            # Fallback на mock дані
-            return await self.get_current_weather(city, use_mock=True)
+            return self._build_mock_current(city, cache_key)
 
     def format_weather_response(self, raw_data: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -287,15 +281,23 @@ class WeatherService:
                                        longitude: float = None, days: int = 5) -> dict:
         """Отримання прогнозу з OpenWeather API"""
 
-        # Формування URL для 5-day forecast API
+        # Параметри запиту (ключ передається через params, а не в URL —
+        # інакше він потрапляє в логи при винятках)
+        url = f"{self.base_url}/forecast"
+        params = {
+            "appid": self.api_key,
+            "units": "metric",
+            "lang": "uk",
+        }
         if city:
-            url = f"{self.base_url}/forecast?q={city}&appid={self.api_key}&units=metric&lang=uk"
+            params["q"] = city
         else:
-            url = f"{self.base_url}/forecast?lat={latitude}&lon={longitude}&appid={self.api_key}&units=metric&lang=uk"
+            params["lat"] = latitude
+            params["lon"] = longitude
 
         # Виконання запиту
         async with httpx.AsyncClient(timeout=self.timeout) as client:
-            response = await client.get(url)
+            response = await client.get(url, params=params)
             response.raise_for_status()
             data = response.json()
 
@@ -645,8 +647,12 @@ class WeatherService:
                     wind_speed=daily_forecast.wind.speed if daily_forecast.wind else None,
                     wind_direction=daily_forecast.wind.direction if daily_forecast.wind else None,
                     wind_gust=daily_forecast.wind.gust if daily_forecast.wind else None,
-                    precipitation_probability=daily_forecast.precipitation.probability if daily_forecast.precipitation else None,
-                    precipitation_amount=daily_forecast.precipitation.amount if daily_forecast.precipitation else None
+                    precipitation_probability=(
+                        daily_forecast.precipitation.probability if daily_forecast.precipitation else None
+                    ),
+                    precipitation_amount=(
+                        daily_forecast.precipitation.amount if daily_forecast.precipitation else None
+                    )
                 )
                 db.add(daily_record)
 
@@ -685,16 +691,7 @@ class WeatherService:
 
         # Якщо використовується mock дані або немає API ключа
         if use_mock or not self.api_key:
-            logger.warning(f"Використовуємо mock дані для координат {latitude}, {longitude}")
-            mock_data = self._get_mock_weather_by_coordinates(latitude, longitude)
-
-            # Кешування mock даних
-            self.cache[cache_key] = {
-                'data': mock_data,
-                'cached_at': datetime.now()
-            }
-
-            return {**mock_data, "cached": False, "mock": True}
+            return self._build_mock_by_coordinates(latitude, longitude, cache_key)
 
         # Запит до OpenWeather API по координатах
         url = f"{self.base_url}/weather"
@@ -730,8 +727,7 @@ class WeatherService:
 
             elif response.status_code == 401:
                 logger.error("Недійсний API ключ OpenWeather")
-                # Fallback на mock дані
-                return await self.get_current_weather_by_coordinates(latitude, longitude, use_mock=True)
+                return self._build_mock_by_coordinates(latitude, longitude, cache_key)
 
             elif response.status_code == 400:
                 raise ValueError(f"Невірні координати: {latitude}, {longitude}")
@@ -741,18 +737,25 @@ class WeatherService:
 
             else:
                 logger.error(f"OpenWeather API помилка: {response.status_code}")
-                # Fallback на mock дані
-                return await self.get_current_weather_by_coordinates(latitude, longitude, use_mock=True)
+                return self._build_mock_by_coordinates(latitude, longitude, cache_key)
 
         except httpx.TimeoutException:
             logger.error(f"Таймаут запиту для координат {latitude}, {longitude}")
-            # Fallback на mock дані
-            return await self.get_current_weather_by_coordinates(latitude, longitude, use_mock=True)
+            return self._build_mock_by_coordinates(latitude, longitude, cache_key)
 
         except Exception as e:
             logger.error(f"Несподівана помилка: {e}")
-            # Fallback на mock дані
-            return await self.get_current_weather_by_coordinates(latitude, longitude, use_mock=True)
+            return self._build_mock_by_coordinates(latitude, longitude, cache_key)
+
+    def _build_mock_by_coordinates(self, latitude: float, longitude: float, cache_key: str) -> Dict[str, Any]:
+        """Побудова та кешування mock-даних погоди по координатах (без рекурсії)"""
+        logger.warning(f"Використовуємо mock дані для координат {latitude}, {longitude}")
+        mock_data = self._get_mock_weather_by_coordinates(latitude, longitude)
+        self.cache[cache_key] = {
+            'data': mock_data,
+            'cached_at': datetime.now()
+        }
+        return {**mock_data, "cached": False, "mock": True}
 
     def _get_mock_weather_by_coordinates(self, latitude: float, longitude: float) -> Dict[str, Any]:
         """Mock дані для погоди по координатах"""

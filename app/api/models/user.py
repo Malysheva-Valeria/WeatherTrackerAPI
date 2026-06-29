@@ -2,10 +2,10 @@
 User model для WeatherTracker API
 """
 
-from sqlalchemy import Column, Integer, String, Boolean, DateTime
+from sqlalchemy import Boolean, Column, DateTime, Integer, String
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
-from datetime import datetime
+
 from app.api.models.base import Base
 
 
@@ -34,13 +34,10 @@ class User(Base):
     login_count = Column(Integer, default=0, nullable=False)
 
     # Часові мітки
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
 
     # Зв'язки з іншими таблицями
-    weather_requests = relationship("WeatherRequest", back_populates="user", cascade="all, delete-orphan")
-
-    # Погодні звʼязки
     weather_requests = relationship("WeatherRequest", back_populates="user", cascade="all, delete-orphan")
     forecast_requests = relationship("ForecastRequest", back_populates="user",
                                      cascade="all, delete-orphan")

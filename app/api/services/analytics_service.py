@@ -1,19 +1,22 @@
 """
 Analytics Service для WeatherTracker API
 """
-from typing import Dict, List, Optional, Any
-from datetime import datetime, timedelta
-from sqlalchemy.orm import Session
-from sqlalchemy import func, desc, asc, and_
-from collections import Counter
-import json
 import csv
 import io
+import logging
+from collections import Counter
+from datetime import datetime, timedelta
+from typing import Any, Dict, List, Optional
+
 from fastapi import Depends
+from sqlalchemy import and_, desc, func
+from sqlalchemy.orm import Session
 
 from app.api.models.user import User
 from app.api.models.weather_request import WeatherRequest
 from app.database import get_db
+
+logger = logging.getLogger(__name__)
 
 
 class AnalyticsService:
@@ -87,7 +90,7 @@ class AnalyticsService:
             }
 
         except Exception as e:
-            print(f"Помилка отримання статистики користувача: {e}")
+            logger.exception("Помилка отримання статистики користувача: %s", e)
             return {
                 'user_id': user_id,
                 'total_requests': 0,
@@ -147,7 +150,7 @@ class AnalyticsService:
             }
 
         except Exception as e:
-            print(f"Помилка отримання популярних міст: {e}")
+            logger.exception("Помилка отримання популярних міст: %s", e)
             return {
                 'popular_cities': [],
                 'summary': {'total_cities_in_system': 0, 'total_countries_in_system': 0, 'showing_top': 0},
@@ -208,7 +211,7 @@ class AnalyticsService:
             }
 
         except Exception as e:
-            print(f"Помилка аналізу температурних трендів: {e}")
+            logger.exception("Помилка аналізу температурних трендів: %s", e)
             return {
                 'city': city or 'No data',
                 'period_days': period_days,
@@ -263,7 +266,7 @@ class AnalyticsService:
                 "summary_generated_at": datetime.utcnow().isoformat()
             }
         except Exception as e:
-            print(f"Помилка отримання огляду: {e}")
+            logger.exception("Помилка отримання огляду: %s", e)
             return {
                 "total_requests": 0,
                 "requests_last_30_days": 0,
@@ -308,8 +311,8 @@ class AnalyticsService:
             return csv_content
 
         except Exception as e:
-            print(f"Деталі помилки CSV: {e}")
-            raise Exception(f"Помилка експорту в CSV: {str(e)}")
+            logger.exception("Помилка експорту в CSV: %s", e)
+            raise
 
     async def export_to_json(self, period_days: int = 30) -> List[Dict[str, Any]]:
         """Експорт даних у JSON"""
@@ -336,8 +339,41 @@ class AnalyticsService:
             return result
 
         except Exception as e:
-            print(f"Деталі помилки JSON: {e}")
-            raise Exception(f"Помилка експорту в JSON: {str(e)}")
+            logger.exception("Помилка експорту в JSON: %s", e)
+            raise
+
+    async def get_system_overview(self) -> Dict[str, Any]:
+        """Розширений огляд системи (для адміністраторів)."""
+        today = datetime.utcnow().date()
+        today_start = datetime.combine(today, datetime.min.time())
+
+        total_users = self.db.query(func.count(User.id)).scalar()
+        total_requests = self.db.query(func.count(WeatherRequest.id)).scalar()
+
+        today_requests = self.db.query(WeatherRequest).filter(
+            WeatherRequest.request_time >= today_start
+        ).count()
+
+        top_users = self.db.query(
+            User.username,
+            func.count(WeatherRequest.id).label('request_count')
+        ).join(WeatherRequest, User.id == WeatherRequest.user_id).group_by(
+            User.id, User.username
+        ).order_by(func.count(WeatherRequest.id).desc()).limit(5).all()
+
+        return {
+            "system_stats": {
+                "total_users": total_users,
+                "total_requests": total_requests,
+                "requests_today": today_requests,
+            },
+            "top_users": [
+                {"username": username, "requests": count}
+                for username, count in top_users
+            ],
+            "generated_at": datetime.utcnow().isoformat(),
+        }
+
 
 async def get_analytics_service(db: Session = Depends(get_db)) -> AnalyticsService:
     """Отримання інстанс Analytics Service"""

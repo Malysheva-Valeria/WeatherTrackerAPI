@@ -2,10 +2,12 @@
 Модель ForecastRequest для збереження прогнозів погоди
 """
 
-from sqlalchemy import Column, Integer, String, Float, DateTime, Boolean, JSON, ForeignKey, Date
+from datetime import datetime, timezone
+
+from sqlalchemy import JSON, Boolean, Column, Date, DateTime, Float, ForeignKey, Integer, String
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
-from datetime import datetime
+
 from app.api.models.base import Base
 
 
@@ -33,7 +35,7 @@ class ForecastRequest(Base):
 
     # Параметри запиту
     forecast_days = Column(Integer, nullable=False, default=5)  # Кількість днів прогнозу
-    request_time = Column(DateTime(timezone=True), default=datetime.utcnow, nullable=False, index=True)
+    request_time = Column(DateTime(timezone=True), server_default=func.now(), nullable=False, index=True)
 
     # Метадані
     is_cached = Column(Boolean, default=False, nullable=False)
@@ -49,7 +51,7 @@ class ForecastRequest(Base):
     max_temperature = Column(Float, nullable=True)  # Максимальна температура
 
     # Часові мітки
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     # Звʼязки
     user = relationship("User", back_populates="forecast_requests")
@@ -62,7 +64,7 @@ class ForecastRequest(Base):
         """Перевірка чи застарів кешований прогноз"""
         if not self.is_cached or not self.cache_expires_at:
             return True
-        return datetime.utcnow() > self.cache_expires_at
+        return datetime.now(timezone.utc) > self.cache_expires_at
 
     def to_dict(self) -> dict:
         """Конвертація в словник для JSON відповідей"""

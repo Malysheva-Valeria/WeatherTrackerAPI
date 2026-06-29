@@ -8,13 +8,15 @@ JWT Authentication Service для WeatherTracker API
 - Валідації безпеки паролів
 """
 
-from datetime import datetime, timedelta
-from typing import Optional, Union, Tuple
+from datetime import datetime, timedelta, timezone
+from typing import Optional, Tuple
+
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
-from app.config import settings
+
 from app.api.models.user import User
+from app.config import settings
 
 
 class AuthService:
@@ -41,10 +43,6 @@ class AuthService:
     def hash_password(self, password: str) -> str:
         """Хешує пароль за допомогою bcrypt"""
         return self.pwd_context.hash(password)
-    
-    def verify_password(self, plain_password: str, hashed_password: str) -> bool:
-        """Перевіряє пароль з хешем"""
-        return self.pwd_context.verify(plain_password, hashed_password)
 
     def verify_password(self, plain_password: str, hashed_password: str) -> bool:
         """
@@ -247,7 +245,7 @@ class AuthService:
             db: Сесія бази даних
             user: Об'єкт користувача
         """
-        user.last_login = datetime.utcnow()
+        user.last_login = datetime.now(timezone.utc)
         user.login_count += 1
         db.commit()
         db.refresh(user)

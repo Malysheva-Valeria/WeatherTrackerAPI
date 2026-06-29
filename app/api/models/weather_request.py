@@ -2,10 +2,10 @@
 WeatherRequest model для збереження історії погодних запитів
 """
 
-from sqlalchemy import Column, Integer, String, Numeric, DateTime, ForeignKey, JSON
+from sqlalchemy import JSON, Boolean, Column, DateTime, ForeignKey, Integer, Numeric, String
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
-from datetime import datetime
+
 from app.api.models.base import Base
 
 
@@ -35,10 +35,10 @@ class WeatherRequest(Base):
     wind_direction = Column(Integer, nullable=True)  # градуси
 
     # Метадані
-    request_time = Column(DateTime(timezone=True), default=datetime.utcnow, nullable=False)
+    request_time = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     response_data = Column(JSON, nullable=True)  # Повні дані з API
-    is_cached = Column(String(10), default=False)  # Чи був запит з кешу
-    is_mock = Column(String(10), default=False)  # Чи використовувались mock дані
+    is_cached = Column(Boolean, default=False, nullable=False)  # Чи був запит з кешу
+    is_mock = Column(Boolean, default=False, nullable=False)  # Чи використовувались mock дані
 
     # Зв'язки
     user = relationship("User", back_populates="weather_requests")

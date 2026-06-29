@@ -2,34 +2,50 @@
 WeatherTracker API - Основний файл додатку з JWT аутентифікацією
 """
 
+import logging
+from contextlib import asynccontextmanager
+
+import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
-import uvicorn
 
-# Імпорт конфігурації та залежностей
-from app.config import settings
-from app.dependencies import get_db
-from app.database import SessionLocal
+from app.api.routers import analytics
 
 # Імпорт роутерів
 from app.api.routers.auth import router as auth_router
 from app.api.routers.users import router as users_router
 from app.api.routers.weather import router as weather_router
-from app.api.routers import analytics
+
+# Імпорт конфігурації та залежностей
+from app.config import settings
+from app.database import SessionLocal
+
+logger = logging.getLogger(__name__)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Події життєвого циклу застосунку (заміна застарілих on_event)."""
+    logger.info("WeatherTracker API запущено (Swagger UI: /docs)")
+    yield
+    logger.info("WeatherTracker API зупинено")
+
+
 # Створення FastAPI додатку
 app = FastAPI(
     title="WeatherTracker API",
     description="API для отримання прогнозу погоди з історією запитів користувачів та JWT аутентифікацією",
     version="1.0.0",
     docs_url="/docs",
-    redoc_url="/redoc"
+    redoc_url="/redoc",
+    lifespan=lifespan,
 )
 
-# CORS middleware для frontend інтеграції в майбутньому
+# CORS middleware: список дозволених origin'ів береться з конфігурації
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # В продакшені змінити на конкретні домени
+    allow_origins=settings.BACKEND_CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -119,29 +135,6 @@ async def models_test():
             "status": "error",
             "message": f"Models import failed: {str(e)}"
         }
-
-
-# Подія запуску
-@app.on_event("startup")
-async def startup_event():
-    print("WeatherTracker API запущено")
-    print(f" Swagger UI: http://{settings.APP_HOST}:{settings.APP_PORT}/docs")
-    print(f" Доступні ендпойнти аутентифікації:")
-    print(f"   POST /auth/register - Реєстрація")
-    print(f"   POST /auth/login - Логін")
-    print(f"   GET /auth/me - Інформація про користувача")
-    print(f"   GET /users/me - Профіль користувача")
-    print(f" Погодні ендпойнти:")
-    print(f"   GET /weather/current?city=Kyiv - Поточна погода")
-    print(f"   GET /weather/history - Історія запитів")
-    print(f"   DELETE /weather/history/{{id}} - Видалити запис")
-    print(f"   GET /weather/stats - Статистика")
-
-
-# Подія зупинки
-@app.on_event("shutdown")
-async def shutdown_event():
-    print("WeatherTracker API зупинено")
 
 
 if __name__ == "__main__":
