@@ -23,6 +23,7 @@ MANIFEST
 
 # Virtual Environment
 venv/
+.venv/
 env/
 ENV/
 env.bak/
@@ -58,6 +59,10 @@ postgres_data/
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# Backups
+*.backup
+*.bak
 
 # Logs
 *.log
